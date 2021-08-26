@@ -1,8 +1,27 @@
-# Substrate Node Template
+<div align="center">
+<img src="https://avatars.githubusercontent.com/u/89528034?s=400&u=37141744cd31c4d2bb349b18627f3903ab7eac34&v=4">
+</div>
 
-[![Try on playground](https://img.shields.io/badge/Playground-Node_Template-brightgreen?logo=Parity%20Substrate)](https://playground.substrate.dev/?deploy=node-template) [![Matrix](https://img.shields.io/matrix/substrate-technical:matrix.org)](https://matrix.to/#/#substrate-technical:matrix.org)
+<div align="Center">
+<h1> Chocolate Node</h1>
+<h2> Decentralized Blockchain Verification Platform </h2>
+To eliminate scams in blockchain ecosystem using user-authentic reviews and auditing.  
+<br>
+Built on Substrate.
 
-A fresh FRAME-based [Substrate](https://www.substrate.io/) node, ready for hacking :rocket:
+<br>  
+<br>
+
+[![Substrate version](https://img.shields.io/badge/Substrate-3.0.0-brightgreen?logo=Parity%20Substrate)](https://substrate.dev/)
+[![Medium](https://img.shields.io/badge/Medium-DeBio-brightgreen?logo=medium)](https://medium.com/)
+</div>
+
+---
+
+
+# Substrate Node
+
+A FRAME-based [Substrate](https://www.substrate.io/) node, ready for fighting back scammers :rocket:
 
 ## Getting Started
 
