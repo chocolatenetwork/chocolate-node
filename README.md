@@ -13,7 +13,7 @@ Built on Substrate.
 <br>
 
 [![Substrate version](https://img.shields.io/badge/Substrate-3.0.0-brightgreen?logo=Parity%20Substrate)](https://substrate.dev/)
-[![Medium](https://img.shields.io/badge/Medium-DeBio-brightgreen?logo=medium)](https://medium.com/)
+[![Medium](https://img.shields.io/badge/Medium-Chocolate-brightgreen?logo=medium)](https://medium.com/)
 </div>
 
 ---
