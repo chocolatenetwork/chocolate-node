@@ -1,13 +1,13 @@
 [package]
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-description = 'Substrate FRAME pallet template for defining custom runtime logic.'
+authors = ['Kresna SHA888 <https://github.com/SHA888>']
+description = 'Substrate FRAME chocolate pallet for defining custom runtime logic.'
 edition = '2018'
-homepage = 'https://substrate.dev'
+homepage = ''
 license = 'Unlicense'
-name = 'pallet-template'
+name = 'pallet-chocolate'
 publish = false
-repository = 'https://github.com/substrate-developer-hub/substrate-node-template/'
-version = '3.0.0-monthly-2021-08'
+repository = 'https://github.com/Chocolate-Project/chocolate-node'
+version = '0.1.0'
 readme = 'README.md'
 
 [package.metadata.docs.rs]
