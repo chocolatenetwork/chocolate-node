@@ -1,8 +1,5 @@
-run-tmp:
-	SKIP_WASM_BUILD= cargo run -- --dev --tmp
-
 run:
-	SKIP_WASM_BUILD= cargo run -- --dev
+	SKIP_WASM_BUILD= cargo run -- --dev --tmp
 
 toolchain:
 	./scripts/init.sh
