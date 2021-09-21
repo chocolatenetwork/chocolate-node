@@ -17,6 +17,11 @@ default-features = false
 path = '../pallets/chocolate'
 version = '0.1.0'
 
+[dependencies.pallet-users]
+default-features = false
+path = '../pallets/users'
+version = '0.1.0'
+
 [build-dependencies.substrate-wasm-builder]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'

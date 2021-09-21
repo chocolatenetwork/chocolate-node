@@ -44,7 +44,8 @@ pub use sp_runtime::{Perbill, Permill};
 
 /// Import the chocolate pallet.
 pub use pallet_chocolate;
-
+/// Import the users pallet
+pub use pallet_users;
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -295,7 +296,10 @@ impl pallet_sudo::Config for Runtime {
 impl pallet_chocolate::Config for Runtime {
 	type Event = Event;
 }
-
+/// Configure the pallet-users in pallets/users.
+impl pallet_users::Config for Runtime {
+	type Event = Event;
+}
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -313,6 +317,8 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the pallet-chocolate in the runtime.
 		ChocolateModule: pallet_chocolate::{Pallet, Call, Storage, Event<T>},
+		UsersModule: pallet_users::{Pallet, Call, Storage, Event<T>},
+
 		Assets: pallet_assets::{Pallet, Call, Storage, Event<T>},
 	}
 );
