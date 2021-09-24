@@ -43,10 +43,11 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		SomethingStored(u32, T::AccountId),
-		UserCreated(Vec<u8>, T::AccountId),
+		UserCreated(T::AccountId),
 	}
 
 	#[pallet::storage]
+	// users store
 	pub type Users<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, User>;
 
 	use v1::User;
@@ -56,7 +57,6 @@ pub mod pallet {
 
 		#[derive(Encode, Decode, Default, Clone)]
 		pub struct User {
-			pub name: Vec<u8>,
 			pub rank_points: u32,
 		}
 	}
@@ -88,15 +88,14 @@ pub mod pallet {
 		// This pallet simply returns back the message in the event
 		// strings are u8 arrays. utf-8
 		/// Signed transaction to create user
-		#[pallet::weight(10_000 + T::DbWeight::get().reads(1))]
-		pub fn make_user(origin: OriginFor<T>, user_name: Vec<u8>) -> DispatchResult {
+		#[pallet::weight(0 + T::DbWeight::get().writes(1))]
+		pub fn make_user(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			ensure!(!Users::<T>::contains_key(&who), Error::<T>::UserAlreadyExists);
-			let copied_name = user_name.to_vec();
-			<Users<T>>::insert(&who, User { name: user_name, rank_points: 0 });
+			<Users<T>>::insert(&who, User { rank_points: 0 });
 
-			Self::deposit_event(Event::UserCreated(copied_name, who));
+			Self::deposit_event(Event::UserCreated( who));
 
 			Ok(())
 		}
