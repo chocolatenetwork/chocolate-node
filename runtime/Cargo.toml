@@ -33,6 +33,10 @@ features = ['derive']
 package = 'parity-scale-codec'
 version = '2.0.0'
 
+# regular rust dependency
+[dependencies.static_assertions]
+version = '1.1.0'
+
 [dependencies.frame-benchmarking]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -94,6 +98,32 @@ tag = 'monthly-2021-08'
 version = '4.0.0-dev'
 
 [dependencies.pallet-grandpa]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '4.0.0-dev'
+
+# Added custom - Include for refactor
+# [dependencies.node-primitives]
+# default-features = false
+# git = 'https://github.com/paritytech/substrate.git'
+# tag = 'monthly-2021-08'
+# version = '2.0.0'
+
+# Added pallets
+[dependencies.pallet-treasury]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '4.0.0-dev'
+
+[dependencies.pallet-elections-phragmen]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '5.0.0-dev'
+
+[dependencies.pallet-collective]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
@@ -222,6 +252,11 @@ std = [
     'pallet-sudo/std',
     'pallet-chocolate/std',
     'pallet-users/std',
+    'pallet-treasury/std',
+    'pallet-collective/std',
+    "pallet-elections-phragmen/std",
+    # Added custom, include for refactor
+    # "node-primitives/std",
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
