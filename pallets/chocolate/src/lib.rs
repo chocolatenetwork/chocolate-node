@@ -19,6 +19,7 @@ mod benchmarking;
 pub mod pallet {
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
+	use sp_std::mem::{discriminant, Discriminant};
 	use sp_std::vec::Vec;
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -31,15 +32,19 @@ pub mod pallet {
 		// type ApprovedOrigin : EnsureOrigin<Self::Origin>;
 		// treasury Id??
 		// type TreasuryPalletId;
+		// The pallet depends on the treasury's definition of proposal id
 	}
-	/// the treasury's definition of a proposal id
-	type ProposalID = u64;
+	/// the treasury's definition of a proposal id - they call it proposal index. u32 as of monthly-08
+	pub type ProposalID = u32;
 	/// my definition of a projectID
-	type ProjectID = u32;
+	pub type ProjectID = u32;
+	/// type alias for project socials
+	pub type ProjectSocials = Vec<Social>;
 	/// type alias for review
-	type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
+	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
 	/// type alias for project
-	type ProjectAl<T> = Project<<T as frame_system::Config>::AccountId>;
+	pub type ProjectAl<T> =
+		Project<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
 	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project
 	// runtime types;
 	use codec::{Decode, Encode};
@@ -50,11 +55,120 @@ pub mod pallet {
 		text: Vec<u8>,
 		project_id: ProjectID,
 	}
+	/// social type, the cfg_Attr is cuz std isn't guaranteed
+	/// Socials are equal only if they point to the same string. This is already implemented by the derive! THe social enum is complete
+	#[derive(Encode, Decode, Clone, PartialEq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
+	pub enum Social {
+		Twitter(Vec<u8>),
+		Facebook(Vec<u8>),
+		Instagram(Vec<u8>),
+		Riot(Vec<u8>),
+		Email(Vec<u8>),
+		None,
+	}
+	/// By default no value
+	impl Default for Social {
+		fn default() -> Self {
+			Social::None
+		}
+	}
+	/// Implementing abstract unique.
+	/// simply check if the struct contains duplicate variants of an enum. Regardless of stored data
+	pub trait AbsUnique {
+		/// Check if a vector contains duplicate instances of an enum variant, regardless of data stored
+		fn abstr_dup(&self) -> bool;
+	}
+	impl AbsUnique for ProjectSocials {
+		fn abstr_dup(&self) -> bool {
+			// memo for the discriminants
+			let mut x: Vec<Discriminant<Social>> = Vec::new();
+			// copy of self for iter
+			let y = (&self).to_vec();
+			let mut dupl = false;
 
+			// loop
+			for n in y.iter() {
+				// Functions take type arguments as ::<>
+				let desc = discriminant::<Social>(n);
+				if x.contains(&desc) {
+					dupl = true;
+					break;
+				};
+				x.push(desc);
+			}
+			dupl
+		}
+	}
+	/// The metadata of a project.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
-	pub struct Project<UserID> {
+	pub struct MetaData {
+		project_name: Vec<u8>,
+		/// Vector, preferably a set. In terms of type. Done.
+		project_socials: ProjectSocials,
+		/// Vector, can contain multiple of same type, just not same value. Allow users to fix such.
+		///  It's their responsibility not to try hacking and putting too much. Ui- store as set
+		founder_socials: Vec<Social>,
+	}
+
+	/// The status of the proposal
+	#[derive(Encode, Decode, Clone, PartialEq)]
+	pub enum Status {
+		/// Project created, proposal pending
+		PendingCreation,
+		///Proposal created
+		Proposed,
+		/// Proposal accepted and moved to council motion
+		MovedToMotion,
+		/// Voting is being done on proposal
+		Voting,
+		/// Proposal accepted
+		Accepted,
+		/// Proposal rejected
+		Rejected,
+	}
+	/// Reason for the current status - Required for rejected proposal.
+	#[derive(Encode, Decode, Clone, PartialEq)]
+	pub enum Reason {
+		/// Negative lenient - base conditions for project missing
+		InsufficientMetaData,
+		/// Negative harsh, project or review is malicious
+		Malicious,
+		/// Positive neutral, covers rank up to voting, accepted, movedToMotion, proposed, pendingCreation.
+		PassedRequirements,
+	}
+	/// The status of a proposal sent to the council from here. (Unnecessary?)NO. Its call can have a soft limit of any council member.
+	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	pub struct ProposalStatus {
+		/// Doing this to learn pattern matching and stuff. It would also be a good util for reviews.
+		status: Status,
+		reason: Reason,
+	}
+	/// Implementing default for the enums, as req by storage
+	/// Default status
+	impl Default for Status {
+		fn default() -> Self {
+			Status::PendingCreation
+		}
+	}
+	/// Default reason
+	impl Default for Reason {
+		fn default() -> Self {
+			Reason::PassedRequirements
+		}
+	}
+	/// The project structure. Initial creation req signed transaction...is it necessary??. Updates are unsigned - check if origin is owner??
+	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	pub struct Project<UserID, Hash> {
 		owner_id: UserID,
-		reviews: Vec<Review<UserID>>,
+		reviews: Option<Vec<Review<UserID>>>,
+		badge: Option<Hash>,
+		/// Optional till I figure out how the calls will be made
+		proposal_id: Option<ProposalID>,
+		/// Project metadata
+		metadata: MetaData,
+		/// the status of the project's proposal in the council.
+		proposal_status: ProposalStatus,
 	}
 
 	#[pallet::pallet]
