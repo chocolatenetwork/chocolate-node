@@ -20,12 +20,41 @@ pub mod pallet {
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
 	use sp_std::vec::Vec;
-
+	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		//   Origins that must approve to use the pallet - Should be implemented properly by provider.
+		//  In this case pallet_collective implements it as type Origin: From<RawOrigin<Self::AccountId, I>>;
+		// type ApprovedOrigin : EnsureOrigin<Self::Origin>;
+		// treasury Id??
+		// type TreasuryPalletId;
+	}
+	/// the treasury's definition of a proposal id
+	type ProposalID = u64;
+	/// my definition of a projectID
+	type ProjectID = u32;
+	/// type alias for review
+	type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
+	/// type alias for project
+	type ProjectAl<T> = Project<<T as frame_system::Config>::AccountId>;
+	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project
+	// runtime types;
+	use codec::{Decode, Encode};
+	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	pub struct Review<UserID> {
+		proposal_id: ProposalID,
+		user_id: UserID,
+		text: Vec<u8>,
+		project_id: ProjectID,
+	}
+
+	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	pub struct Project<UserID> {
+		owner_id: UserID,
+		reviews: Vec<Review<UserID>>,
 	}
 
 	#[pallet::pallet]
@@ -39,8 +68,7 @@ pub mod pallet {
 	// Learn more about declaring storage items:
 	// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
 	pub type Something<T> = StorageValue<_, u32>;
-	
-	// declare the committee and the treasurey
+
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
 	#[pallet::event]
@@ -99,7 +127,7 @@ pub mod pallet {
 					// Update the value in storage with the incremented result.
 					<Something<T>>::put(new);
 					Ok(())
-				},
+				}
 			}
 		}
 	}
