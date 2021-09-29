@@ -56,7 +56,9 @@ pub mod pallet {
 		project_id: ProjectID,
 	}
 	/// social type, the cfg_Attr is cuz std isn't guaranteed
-	/// Socials are equal only if they point to the same string. This is already implemented by the derive! THe social enum is complete
+	/// Socials are equal only if they point to the same string.
+	/// This is already implemented by the derive! - PartialEq,
+	/// The social enum is complete. I see no reason why vscode is showing err as Vec<u8> is impl by parity
 	#[derive(Encode, Decode, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub enum Social {
@@ -82,20 +84,20 @@ pub mod pallet {
 	impl AbsUnique for ProjectSocials {
 		fn abstr_dup(&self) -> bool {
 			// memo for the discriminants
-			let mut x: Vec<Discriminant<Social>> = Vec::new();
+			let mut disc_mem: Vec<Discriminant<Social>> = Vec::new();
 			// copy of self for iter
-			let y = (&self).to_vec();
+			let cp = (&self).to_vec();
 			let mut dupl = false;
 
 			// loop
-			for n in y.iter() {
+			for n in cp.iter() {
 				// Functions take type arguments as ::<>
-				let desc = discriminant::<Social>(n);
-				if x.contains(&desc) {
+				let disc = discriminant::<Social>(n);
+				if disc_mem.contains(&disc) {
 					dupl = true;
 					break;
 				};
-				x.push(desc);
+				disc_mem.push(disc);
 			}
 			dupl
 		}
@@ -160,8 +162,11 @@ pub mod pallet {
 	/// The project structure. Initial creation req signed transaction...is it necessary??. Updates are unsigned - check if origin is owner??
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	pub struct Project<UserID, Hash> {
+		/// The owner of the project
 		owner_id: UserID,
+		/// A list of the project's reviews - Vec
 		reviews: Option<Vec<Review<UserID>>>,
+		/// A hash? that is the badge - ToDo
 		badge: Option<Hash>,
 		/// Optional till I figure out how the calls will be made
 		proposal_id: Option<ProposalID>,
@@ -175,6 +180,12 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
+	/// Storage item for the project index, a u32. Incremented on the fly. Note: T is needed, despite not being directly used. Macro and ref magic
+	#[pallet::storage]
+	pub type ProjectIndex<T: Config> = StorageValue<_, ProjectID>;
+	/// Storage map from the proposal index to the projects
+	#[pallet::storage]
+	pub type Projects<T: Config> = StorageMap<_, Blake2_128Concat, ProjectID, ProjectAl<T>>;
 	// The pallet's runtime storage items.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/storage
 	#[pallet::storage]
