@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+/// Study the nicks pallet and modify it after stating its config values to push balances to treasury and have commission control it.
 
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
@@ -18,18 +19,173 @@ mod benchmarking;
 pub mod pallet {
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-
+	use sp_std::mem::{discriminant, Discriminant};
+	use sp_std::vec::Vec;
+	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		//   Origins that must approve to use the pallet - Should be implemented properly by provider.
+		//  In this case pallet_collective implements it as type Origin: From<RawOrigin<Self::AccountId, I>>;
+		// type ApprovedOrigin : EnsureOrigin<Self::Origin>;
+		// treasury Id??
+		// type TreasuryPalletId;
+		// The pallet depends on the treasury's definition of proposal id
+	}
+	/// the treasury's definition of a proposal id - they call it proposal index. u32 as of monthly-08
+	pub type ProposalID = u32;
+	/// my definition of a projectID
+	pub type ProjectID = u32;
+	/// type alias for project socials
+	pub type ProjectSocials = Vec<Social>;
+	/// type alias for review
+	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
+	/// type alias for project
+	pub type ProjectAl<T> =
+		Project<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
+	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project
+	// runtime types;
+	use codec::{Decode, Encode};
+	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	pub struct Review<UserID> {
+		proposal_id: ProposalID,
+		user_id: UserID,
+		text: Vec<u8>,
+		project_id: ProjectID,
+	}
+	/// social type, the cfg_Attr is cuz std isn't guaranteed
+	/// Socials are equal only if they point to the same string.
+	/// This is already implemented by the derive! - PartialEq,
+	/// The social enum is complete. I see no reason why vscode is showing err as Vec<u8> is impl by parity
+	#[derive(Encode, Decode, Clone, PartialEq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
+	pub enum Social {
+		Twitter(Vec<u8>),
+		Facebook(Vec<u8>),
+		Instagram(Vec<u8>),
+		Riot(Vec<u8>),
+		Email(Vec<u8>),
+		None,
+	}
+	/// By default no value
+	impl Default for Social {
+		fn default() -> Self {
+			Social::None
+		}
+	}
+	/// Implementing abstract unique.
+	/// simply check if the struct contains duplicate variants of an enum. Regardless of stored data
+	pub trait AbsUnique {
+		/// Check if a vector contains duplicate instances of an enum variant, regardless of data stored
+		fn abstr_dup(&self) -> bool;
+	}
+	impl AbsUnique for ProjectSocials {
+		fn abstr_dup(&self) -> bool {
+			// memo for the discriminants
+			let mut disc_mem: Vec<Discriminant<Social>> = Vec::new();
+			// copy of self for iter
+			let cp = (&self).to_vec();
+			let mut dupl = false;
+
+			// loop
+			for n in cp.iter() {
+				// Functions take type arguments as ::<>
+				let disc = discriminant::<Social>(n);
+				if disc_mem.contains(&disc) {
+					dupl = true;
+					break;
+				};
+				disc_mem.push(disc);
+			}
+			dupl
+		}
+	}
+	/// The metadata of a project.
+	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	pub struct MetaData {
+		project_name: Vec<u8>,
+		/// Vector, preferably a set. In terms of type. Done.
+		project_socials: ProjectSocials,
+		/// Vector, can contain multiple of same type, just not same value. Allow users to fix such.
+		///  It's their responsibility not to try hacking and putting too much. Ui- store as set
+		founder_socials: Vec<Social>,
+	}
+
+	/// The status of the proposal
+	#[derive(Encode, Decode, Clone, PartialEq)]
+	pub enum Status {
+		/// Project created, proposal pending
+		PendingCreation,
+		///Proposal created
+		Proposed,
+		/// Proposal accepted and moved to council motion
+		MovedToMotion,
+		/// Voting is being done on proposal
+		Voting,
+		/// Proposal accepted
+		Accepted,
+		/// Proposal rejected
+		Rejected,
+	}
+	/// Reason for the current status - Required for rejected proposal.
+	#[derive(Encode, Decode, Clone, PartialEq)]
+	pub enum Reason {
+		/// Negative lenient - base conditions for project missing
+		InsufficientMetaData,
+		/// Negative harsh, project or review is malicious
+		Malicious,
+		/// Positive neutral, covers rank up to voting, accepted, movedToMotion, proposed, pendingCreation.
+		PassedRequirements,
+	}
+	/// The status of a proposal sent to the council from here. (Unnecessary?)NO. Its call can have a soft limit of any council member.
+	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	pub struct ProposalStatus {
+		/// Doing this to learn pattern matching and stuff. It would also be a good util for reviews.
+		status: Status,
+		reason: Reason,
+	}
+	/// Implementing default for the enums, as req by storage
+	/// Default status
+	impl Default for Status {
+		fn default() -> Self {
+			Status::PendingCreation
+		}
+	}
+	/// Default reason
+	impl Default for Reason {
+		fn default() -> Self {
+			Reason::PassedRequirements
+		}
+	}
+	/// The project structure. Initial creation req signed transaction...is it necessary??. Updates are unsigned - check if origin is owner??
+	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	pub struct Project<UserID, Hash> {
+		/// The owner of the project
+		owner_id: UserID,
+		/// A list of the project's reviews - Vec
+		reviews: Option<Vec<Review<UserID>>>,
+		/// A hash? that is the badge - ToDo
+		badge: Option<Hash>,
+		/// Optional till I figure out how the calls will be made
+		proposal_id: Option<ProposalID>,
+		/// Project metadata
+		metadata: MetaData,
+		/// the status of the project's proposal in the council.
+		proposal_status: ProposalStatus,
 	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
+	/// Storage item for the project index, a u32. Incremented on the fly. Note: T is needed, despite not being directly used. Macro and ref magic
+	#[pallet::storage]
+	pub type ProjectIndex<T: Config> = StorageValue<_, ProjectID>;
+	/// Storage map from the proposal index to the projects
+	#[pallet::storage]
+	pub type Projects<T: Config> = StorageMap<_, Blake2_128Concat, ProjectID, ProjectAl<T>>;
 	// The pallet's runtime storage items.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/storage
 	#[pallet::storage]
@@ -96,7 +252,7 @@ pub mod pallet {
 					// Update the value in storage with the incremented result.
 					<Something<T>>::put(new);
 					Ok(())
-				},
+				}
 			}
 		}
 	}

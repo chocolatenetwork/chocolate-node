@@ -1,10 +1,10 @@
 [package]
 authors = ['Kresna SHA888 <https://github.com/SHA888>']
-description = 'Substrate FRAME chocolate pallet for defining custom runtime logic.'
+description = 'Substrate FRAME users pallet for defining custom runtime logic.'
 edition = '2018'
 homepage = ''
 license = 'Unlicense'
-name = 'users'
+name = 'pallet-users'
 publish = false
 repository = 'https://github.com/Chocolate-Project/chocolate-node'
 version = '0.1.0'
@@ -40,6 +40,12 @@ features = ['derive']
 package = 'parity-scale-codec'
 version = '2.0.0'
 
+[dependencies.sp-std]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '4.0.0-dev'
+
 [dependencies.frame-benchmarking]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
@@ -64,6 +70,7 @@ default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
     'codec/std',
+    'sp-std/std',
     'frame-support/std',
     'frame-system/std',
     'frame-benchmarking/std',

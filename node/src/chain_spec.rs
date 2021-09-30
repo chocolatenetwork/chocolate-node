@@ -1,6 +1,7 @@
+// The extra import : CHOC could be moved to currency part of constants.
 use chocolate_runtime::{
-	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
-	SystemConfig, WASM_BINARY,
+	AccountId, AuraConfig, Balance, BalancesConfig, CouncilConfig, ElectionsConfig, GenesisConfig,
+	GrandpaConfig, Signature, SudoConfig, SystemConfig, CHOC, WASM_BINARY,
 };
 use sc_service::{ChainType, Properties};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -131,7 +132,9 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 	))
 }
 
-/// Configure initial storage state for FRAME modules.
+/// Configure initial storage state for FRAME modules.  
+/// The object modified here in GenesisConfig maps to the one in lib.rs
+/// where you specified pallets in camelcase. The type definitions ending in Config match what is used - This fnx is called as genesis for test
 fn testnet_genesis(
 	wasm_binary: &[u8],
 	initial_authorities: Vec<(AuraId, GrandpaId)>,
@@ -139,6 +142,10 @@ fn testnet_genesis(
 	endowed_accounts: Vec<AccountId>,
 	_enable_println: bool,
 ) -> GenesisConfig {
+	let num_endowed_accounts = endowed_accounts.len();
+
+	const ENDOWMENT: Balance = 10_000_000 * CHOC;
+	const STASH: Balance = ENDOWMENT / 1000;
 	GenesisConfig {
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
@@ -147,8 +154,22 @@ fn testnet_genesis(
 		},
 		balances: BalancesConfig {
 			// Configure endowed accounts with initial balance of 1 << 60.
-			balances: endowed_accounts.iter().cloned().map(|k| (k, 1 << 60)).collect(),
+			// configure with initial balance of endowment instead to test - Each person gets 1B choc.
+			balances: endowed_accounts.iter().cloned().map(|k| (k, ENDOWMENT)).collect(),
 		},
+		elections: ElectionsConfig {
+			// configure all members to have an initial 'stash' backing, or elect them
+			// - These map to our default members of Council Collective - If not changed, council remains constant for n period
+			// Elect only half endowed accounts initially - Alice and Bob  - Backed with 1M each. 
+			members: endowed_accounts
+				.iter()
+				.take((num_endowed_accounts + 1) / 2)
+				.cloned()
+				.map(|member| (member, STASH))
+				.collect(),
+		},
+		council: CouncilConfig::default(),
+		treasury: Default::default(),
 		aura: AuraConfig {
 			authorities: initial_authorities.iter().map(|x| (x.0.clone())).collect(),
 		},
