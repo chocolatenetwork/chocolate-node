@@ -33,11 +33,6 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-	#[pallet::storage]
-	#[pallet::getter(fn something)]
-	// define pallet storage abilities up top and create function definitions inside
-	pub type Something<T> = StorageValue<_, u32>;
-
 	#[pallet::event]
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -73,19 +68,7 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn do_something(origin: OriginFor<T>, something: u32) -> DispatchResult {
-			let who = ensure_signed(origin)?;
-
-			<Something<T>>::put(something);
-
-			Self::deposit_event(Event::SomethingStored(something, who));
-
-			Ok(())
-		}
-
-		// use base weight then add on any additional transactions
-		// This pallet simply returns back the message in the event
+		// use base weight then add on any additional operations
 		// strings are u8 arrays. utf-8
 		/// Signed transaction to create user
 		#[pallet::weight(0 + T::DbWeight::get().writes(1))]
@@ -95,24 +78,9 @@ pub mod pallet {
 			ensure!(!Users::<T>::contains_key(&who), Error::<T>::UserAlreadyExists);
 			<Users<T>>::insert(&who, User { rank_points: 0 });
 
-			Self::deposit_event(Event::UserCreated( who));
+			Self::deposit_event(Event::UserCreated(who));
 
 			Ok(())
-		}
-
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
-			let _who = ensure_signed(origin)?;
-
-			match <Something<T>>::get() {
-				None => Err(Error::<T>::NoneValue)?,
-				Some(old) => {
-					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-
-					<Something<T>>::put(new);
-					Ok(())
-				}
-			}
 		}
 	}
 }
