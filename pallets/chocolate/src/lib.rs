@@ -81,13 +81,14 @@ pub mod pallet {
 			Social::None
 		}
 	}
-	/// Implementing abstract unique.
-	/// simply check if the struct contains duplicate variants of an enum. Regardless of stored data
-	pub trait AbsUnique {
+	/// Trait that enforces requirements of projectSocials.
+	pub trait ProjectSocialReqs {
 		/// Check if a vector contains duplicate instances of an enum variant, regardless of data stored
 		fn abstr_dup(&self) -> bool;
+		/// Also check if the project has an email
+		fn has_email(&self) -> bool;
 	}
-	impl AbsUnique for ProjectSocials {
+	impl ProjectSocialReqs for ProjectSocials {
 		fn abstr_dup(&self) -> bool {
 			// memo for the discriminants
 			let mut disc_mem: Vec<Discriminant<Social>> = Vec::new();
@@ -106,6 +107,22 @@ pub mod pallet {
 				disc_mem.push(disc);
 			}
 			dupl
+		}
+		fn has_email(&self) -> bool {
+			// copy of self for iter
+			let cp = (&self).to_vec();
+			let mut passed = false;
+			let test = Social::Email(b"wasm".to_vec());
+			// loop
+			for n in cp.iter() {
+				// Functions take type arguments as ::<>
+				let disc = discriminant::<Social>(n);
+				if disc == discriminant::<Social>(&test) {
+					passed = true;
+					break;
+				};
+			}
+			passed
 		}
 	}
 	/// The metadata of a project. The debug trait is actually a limit of T: Config
@@ -226,6 +243,20 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
+		/// The project must have at least one email in metadata
+		NoEmail,
+		/// A project must have at least two means of contact including email
+		LessProjectSocials,
+		/// Duplicate project socials
+		DuplicateProjectSocials,
+		/// Insufficient founder socials! Must be >=2
+		LessFounderSocials,
+		/// The origin dispatched from does not match the owner of the project
+		InvalidOwner,
+		/// The name given cannot be parsed
+		InvalidName,
+		/// Another project has the same name
+		DuplicateName,
 		/// Error names should be descriptive.
 		NoneValue,
 		/// Errors should have helpful documentation associated with them.
