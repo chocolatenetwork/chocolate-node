@@ -141,14 +141,8 @@ pub mod pallet {
 	#[derive(Encode, Decode, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub enum Status {
-		/// Project created, proposal pending
-		PendingCreation,
 		///Proposal created
 		Proposed,
-		/// Proposal accepted and moved to council motion
-		MovedToMotion,
-		/// Voting is being done on proposal
-		Voting,
 		/// Proposal accepted
 		Accepted,
 		/// Proposal rejected
@@ -158,11 +152,11 @@ pub mod pallet {
 	#[derive(Encode, Decode, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub enum Reason {
-		/// Negative lenient - base conditions for project missing
+		/// Negative lenient - base conditions for project missing or review lacking detail
 		InsufficientMetaData,
 		/// Negative harsh, project or review is malicious
 		Malicious,
-		/// Positive neutral, covers rank up to voting, accepted, movedToMotion, proposed, pendingCreation.
+		/// Positive neutral, covers rank up to accepted.
 		PassedRequirements,
 	}
 	/// The status of a proposal sent to the council from here. (Unnecessary?)NO. Its call can have a soft limit of any council member.
@@ -177,7 +171,7 @@ pub mod pallet {
 	/// Default status
 	impl Default for Status {
 		fn default() -> Self {
-			Status::PendingCreation
+			Status::Proposed
 		}
 	}
 	/// Default reason
@@ -238,6 +232,8 @@ pub mod pallet {
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, T::AccountId),
+		/// parameters. [owner,name]
+		ProjectCreated(Vec<u8>),
 	}
 
 	// Errors inform users that something went wrong.
