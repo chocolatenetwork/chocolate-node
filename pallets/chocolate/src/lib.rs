@@ -35,24 +35,30 @@ pub mod pallet {
 		// The pallet depends on the treasury's definition of proposal id
 	}
 	/// the treasury's definition of a proposal id - they call it proposal index. u32 as of monthly-08
-	pub type ProposalID = u32;
-	/// my definition of a projectID
+	/// Deprecated...proposals will reference their actions...indexing through projectID is sufficient
+	/// A list of names, an alias for project names
+	pub type ListOfNames = Vec<Vec<u8>>;
+	/// A simple u32
 	pub type ProjectID = u32;
 	/// type alias for project socials
 	pub type ProjectSocials = Vec<Social>;
+	/// Index for reviews , use to link to project
+	pub type ReviewID = u64;
 	/// type alias for review
 	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
 	/// type alias for project
 	pub type ProjectAl<T> =
 		Project<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
-	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project
+
+	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project.
 	// runtime types;
 	use codec::{Decode, Encode};
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct Review<UserID> {
-		proposal_id: ProposalID,
+		proposal_status: ProposalStatus,
 		user_id: UserID,
-		text: Vec<u8>,
+		review_text: Vec<u8>,
 		project_id: ProjectID,
 	}
 	/// social type, the cfg_Attr is cuz std isn't guaranteed
@@ -102,8 +108,9 @@ pub mod pallet {
 			dupl
 		}
 	}
-	/// The metadata of a project.
+	/// The metadata of a project. The debug trait is actually a limit of T: Config
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct MetaData {
 		project_name: Vec<u8>,
 		/// Vector, preferably a set. In terms of type. Done.
@@ -115,6 +122,7 @@ pub mod pallet {
 
 	/// The status of the proposal
 	#[derive(Encode, Decode, Clone, PartialEq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
 	pub enum Status {
 		/// Project created, proposal pending
 		PendingCreation,
@@ -131,6 +139,7 @@ pub mod pallet {
 	}
 	/// Reason for the current status - Required for rejected proposal.
 	#[derive(Encode, Decode, Clone, PartialEq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
 	pub enum Reason {
 		/// Negative lenient - base conditions for project missing
 		InsufficientMetaData,
@@ -141,6 +150,7 @@ pub mod pallet {
 	}
 	/// The status of a proposal sent to the council from here. (Unnecessary?)NO. Its call can have a soft limit of any council member.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct ProposalStatus {
 		/// Doing this to learn pattern matching and stuff. It would also be a good util for reviews.
 		status: Status,
@@ -159,17 +169,16 @@ pub mod pallet {
 			Reason::PassedRequirements
 		}
 	}
-	/// The project structure. Initial creation req signed transaction...is it necessary??. Updates are unsigned - check if origin is owner??
+	/// The project structure. Initial creation req signed transaction.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
+	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct Project<UserID, Hash> {
 		/// The owner of the project
 		owner_id: UserID,
 		/// A list of the project's reviews - Vec
-		reviews: Option<Vec<Review<UserID>>>,
+		reviews: Option<Vec<ReviewID>>,
 		/// A hash? that is the badge - ToDo
 		badge: Option<Hash>,
-		/// Optional till I figure out how the calls will be made
-		proposal_id: Option<ProposalID>,
 		/// Project metadata
 		metadata: MetaData,
 		/// the status of the project's proposal in the council.
@@ -180,12 +189,21 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-	/// Storage item for the project index, a u32. Incremented on the fly. Note: T is needed, despite not being directly used. Macro and ref magic
-	#[pallet::storage]
-	pub type ProjectIndex<T: Config> = StorageValue<_, ProjectID>;
-	/// Storage map from the proposal index to the projects
+	/// Storage map from the project index - id to the projects
 	#[pallet::storage]
 	pub type Projects<T: Config> = StorageMap<_, Blake2_128Concat, ProjectID, ProjectAl<T>>;
+	/// Storage map from the review index - id to the reviews
+	#[pallet::storage]
+	pub type Reviews<T: Config> = StorageMap<_, Blake2_128Concat, ReviewID, ReviewAl<T>>;
+	/// Storage value for project index. Increment as we go
+	#[pallet::storage]
+	pub type ProjectIndex<T: Config> = StorageValue<_, ProjectID>;
+	/// Storage value for reviews index. Increment as we go
+	#[pallet::storage]
+	pub type ReviewIndex<T: Config> = StorageValue<_, ReviewID>;
+	/// Storage value for project names. Keep sorted.
+	#[pallet::storage]
+	pub type ProjectNames<T: Config> = StorageValue<_, ListOfNames>;
 	// The pallet's runtime storage items.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/storage
 	#[pallet::storage]
