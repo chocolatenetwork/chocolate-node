@@ -60,10 +60,12 @@ pub mod pallet {
 	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
 	/// type alias for project
 	pub type ProjectAl<T> =
-		Project<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
+		Project<<T as frame_system::Config>::AccountId>;
 	/// Type alias for balance, binding T::Currency to Currency::AccountId and then extracting from that Balance. Accessible via T::BalanceOf. T is frame_System.
 	type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+		Project<<T as frame_system::Config>::AccountId>;
+
 	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project.
 	// runtime types;
 	use codec::{Decode, Encode};
@@ -166,6 +168,8 @@ pub mod pallet {
 	#[derive(Encode, Decode, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub enum Reason {
+		/// Custom reason to encapsulate further things like marketCap and other details
+		Other(Vec<u8>),
 		/// Negative lenient - base conditions for project missing or review lacking detail
 		InsufficientMetaData,
 		/// Negative harsh, project or review is malicious
@@ -197,13 +201,13 @@ pub mod pallet {
 	/// The project structure. Initial creation req signed transaction.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct Project<UserID, Hash> {
+	pub struct Project<UserID> {
 		/// The owner of the project
 		owner_id: UserID,
 		/// A list of the project's reviews - Vec
 		reviews: Option<Vec<ReviewID>>,
-		/// A hash? that is the badge - ToDo
-		badge: Option<Hash>,
+		/// A bool that allows for simple allocation of the unique chocolate badge. NFT??
+		badge: Option<bool>,
 		/// Project metadata
 		metadata: MetaData,
 		/// the status of the project's proposal in the council.
