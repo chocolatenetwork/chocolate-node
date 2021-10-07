@@ -59,12 +59,10 @@ pub mod pallet {
 	/// type alias for review - this is the base struct, like the 2nd part of Balancesof
 	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
 	/// type alias for project
-	pub type ProjectAl<T> =
-		Project<<T as frame_system::Config>::AccountId>;
+	pub type ProjectAl<T> = Project<<T as frame_system::Config>::AccountId>;
 	/// Type alias for balance, binding T::Currency to Currency::AccountId and then extracting from that Balance. Accessible via T::BalanceOf. T is frame_System.
 	type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-		Project<<T as frame_system::Config>::AccountId>;
 
 	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project.
 	// runtime types;
