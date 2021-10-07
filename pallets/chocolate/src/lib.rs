@@ -152,6 +152,8 @@ pub mod pallet {
 	#[derive(Encode, Decode, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub enum Reason {
+		/// Custom reason to encapsulate further things like marketCap and other details
+		Other(Vec<u8>),
 		/// Negative lenient - base conditions for project missing or review lacking detail
 		InsufficientMetaData,
 		/// Negative harsh, project or review is malicious
@@ -188,8 +190,8 @@ pub mod pallet {
 		owner_id: UserID,
 		/// A list of the project's reviews - Vec
 		reviews: Option<Vec<ReviewID>>,
-		/// A hash? that is the badge - ToDo
-		badge: Option<Hash>,
+		/// A bool that allows for simple allocation of the unique chocolate badge. NFT??
+		badge: Option<bool>,
 		/// Project metadata
 		metadata: MetaData,
 		/// the status of the project's proposal in the council.
