@@ -334,6 +334,12 @@ impl pallet_sudo::Config for Runtime {
 /// Configure the pallet-chocolate in pallets/chocolate.
 impl pallet_chocolate::Config for Runtime {
 	type Event = Event;
+	type ApprovedOrigin = EnsureOneOf<
+		AccountId,
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionAtLeast<_3, _5, AccountId, CouncilCollective>,
+	>;
+	type Currency = Balances;
 }
 /// Configure the pallet-users in pallets/users.
 impl pallet_users::Config for Runtime {

@@ -18,6 +18,3 @@ fn correct_error_for_none_value() {
 		assert_noop!(ChocolateModule::cause_error(Origin::signed(1)), Error::<Test>::NoneValue);
 	});
 }
-
-
-

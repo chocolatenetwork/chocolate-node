@@ -10,6 +10,7 @@ use sp_runtime::{
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
+// The runtime is an enum. omoshiroi
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -19,6 +20,7 @@ frame_support::construct_runtime!(
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		ChocolateModule: pallet_chocolate::{Pallet, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
 	}
 );
 
@@ -45,7 +47,7 @@ impl system::Config for Test {
 	type BlockHashCount = BlockHashCount;
 	type Version = ();
 	type PalletInfo = PalletInfo;
-	type AccountData = ();
+	type AccountData = pallet_balances::AccountData<u128>;
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
@@ -53,8 +55,31 @@ impl system::Config for Test {
 	type OnSetCode = ();
 }
 
+parameter_types! {
+	pub const ExistentialDeposit: u128 = 500;
+}
+
+impl pallet_balances::Config for Test {
+	// from treasury tests...not using
+	type MaxLocks = ();
+	type MaxReserves = ();
+	type ReserveIdentifier = [u8; 8];
+	/// The type for recording an account's balance.
+	type Balance = u128;
+	/// The ubiquitous event type.
+	type Event = Event;
+	type DustRemoval = ();
+	type ExistentialDeposit = ExistentialDeposit;
+	type AccountStore = System;
+	type WeightInfo = ();
+}
+// our configs start here
 impl pallet_chocolate::Config for Test {
 	type Event = Event;
+	// no need to rope in collective pallet. we are enough
+	type ApprovedOrigin = frame_system::EnsureRoot<u64>;
+	// this is simply a pointer to the true implementor,and creator of the currency trait...the balances pallet
+	type Currency = Balances;
 }
 
 // Build genesis storage according to the mock runtime.

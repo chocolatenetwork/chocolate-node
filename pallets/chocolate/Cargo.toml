@@ -66,14 +66,29 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
 
+# Added pallets
+[dependencies.pallet-treasury]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '4.0.0-dev'
+# Added pallets
+[dependencies.pallet-balances]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '4.0.0-dev'
+
 [features]
 default = ['std']
-runtime-benchmarks = ['frame-benchmarking']
+runtime-benchmarks = ['frame-benchmarking','frame-support/runtime-benchmarks','frame-system/runtime-benchmarks']
 std = [
     'codec/std',
     'sp-std/std',
     'frame-support/std',
     'frame-system/std',
+    'pallet-treasury/std',
+    'pallet-balances/std',
     'frame-benchmarking/std',
 ]
 try-runtime = ['frame-support/try-runtime']
