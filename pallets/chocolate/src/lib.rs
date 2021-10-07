@@ -48,7 +48,7 @@ pub mod pallet {
 	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
 	/// type alias for project
 	pub type ProjectAl<T> =
-		Project<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
+		Project<<T as frame_system::Config>::AccountId>;
 
 	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project.
 	// runtime types;
@@ -185,7 +185,7 @@ pub mod pallet {
 	/// The project structure. Initial creation req signed transaction.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct Project<UserID, Hash> {
+	pub struct Project<UserID> {
 		/// The owner of the project
 		owner_id: UserID,
 		/// A list of the project's reviews - Vec
