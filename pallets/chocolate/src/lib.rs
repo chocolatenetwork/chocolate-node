@@ -17,9 +17,18 @@ mod benchmarking;
 
 #[frame_support::pallet]
 pub mod pallet {
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
+	use frame_support::{
+		dispatch::DispatchResult,
+		pallet_prelude::*,
+		traits::{
+			Currency, ExistenceRequirement::KeepAlive, Imbalance, OnUnbalanced, ReservableCurrency,
+			WithdrawReasons,
+		},
+		PalletId,
+	};
 	use frame_system::pallet_prelude::*;
 	use sp_std::mem::{discriminant, Discriminant};
+	use sp_std::str;
 	use sp_std::vec::Vec;
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -27,15 +36,18 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		//   Origins that must approve to use the pallet - Should be implemented properly by provider.
+		///  Origins that must approve to use the pallet - Should be implemented properly by provider.
+		type ApprovedOrigin: EnsureOrigin<Self::Origin>;
+		/// The currency trait, associated to the pallet. All methods accessible from T::Currency*
+		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
 		//  In this case pallet_collective implements it as type Origin: From<RawOrigin<Self::AccountId, I>>;
 		// type ApprovedOrigin : EnsureOrigin<Self::Origin>;
 		// treasury Id??
 		// type TreasuryPalletId;
 		// The pallet depends on the treasury's definition of proposal id
 	}
-	/// the treasury's definition of a proposal id - they call it proposal index. u32 as of monthly-08
-	/// Deprecated...proposals will reference their actions...indexing through projectID is sufficient
+	/// type alias for text
+	pub type TextAl = Vec<u8>;
 	/// A list of names, an alias for project names
 	pub type ListOfNames = Vec<Vec<u8>>;
 	/// A simple u32
@@ -44,11 +56,13 @@ pub mod pallet {
 	pub type ProjectSocials = Vec<Social>;
 	/// Index for reviews , use to link to project
 	pub type ReviewID = u64;
-	/// type alias for review
+	/// type alias for review - this is the base struct, like the 2nd part of Balancesof
 	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
 	/// type alias for project
-	pub type ProjectAl<T> =
-		Project<<T as frame_system::Config>::AccountId, <T as frame_system::Config>::Hash>;
+	pub type ProjectAl<T> = Project<<T as frame_system::Config>::AccountId>;
+	/// Type alias for balance, binding T::Currency to Currency::AccountId and then extracting from that Balance. Accessible via T::BalanceOf. T is frame_System.
+	type BalanceOf<T> =
+		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project.
 	// runtime types;
@@ -185,7 +199,7 @@ pub mod pallet {
 	/// The project structure. Initial creation req signed transaction.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct Project<UserID, Hash> {
+	pub struct Project<UserID> {
 		/// The owner of the project
 		owner_id: UserID,
 		/// A list of the project's reviews - Vec
@@ -202,8 +216,9 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
-	/// Storage map from the project index - id to the projects
+	/// Storage map from the project index - id to the projects. getters are for json rpc.
 	#[pallet::storage]
+	#[pallet::getter(fn get_projects)]
 	pub type Projects<T: Config> = StorageMap<_, Blake2_128Concat, ProjectID, ProjectAl<T>>;
 	/// Storage map from the review index - id to the reviews
 	#[pallet::storage]
@@ -236,6 +251,8 @@ pub mod pallet {
 		SomethingStored(u32, T::AccountId),
 		/// parameters. [owner,name]
 		ProjectCreated(Vec<u8>),
+		/// Minted [amount]
+		Minted(BalanceOf<T>),
 	}
 
 	// Errors inform users that something went wrong.
@@ -301,6 +318,75 @@ pub mod pallet {
 					Ok(())
 				}
 			}
+		}
+		// Refactor TO-DO: Abstract validation into a function and generalise.
+		/// Create a project
+		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,3))]
+		pub fn create_project(
+			origin: OriginFor<T>,
+			project_name: TextAl,
+			founder_socials: Vec<Social>,
+			project_socials: ProjectSocials,
+		) -> DispatchResult {
+			let who = ensure_signed(origin)?;
+			// ensure at least two unique project_Socials and founder_socials, enforce project emails
+			ensure!(!(project_socials.abstr_dup()), Error::<T>::DuplicateProjectSocials);
+			ensure!(project_socials.has_email(), Error::<T>::NoEmail);
+			ensure!(founder_socials.len() >= 2, Error::<T>::LessFounderSocials);
+			ensure!(project_socials.len() >= 2, Error::<T>::LessProjectSocials);
+			// <Project name validation> - get name for validation
+			let name = str::from_utf8(&project_name);
+			ensure!(name.is_ok(), Error::<T>::InvalidName);
+			// should already be averted...but just in case.
+			// Ensure we have an actual value
+			let mut name_lower = name.unwrap_or_default().to_lowercase().encode();
+			let def: &str = Default::default();
+			ensure!(name_lower != def.encode(), Error::<T>::InvalidName);
+			// ignore if already lowercase
+			if name.unwrap_or_default().to_lowercase() == name.unwrap_or_default() {
+				name_lower = name.unwrap_or_default().encode();
+			}
+			// </Project name validation>
+
+			// ensure no duplicate names.
+			let mut names = <ProjectNames<T>>::get().unwrap_or_default();
+			match names.binary_search(&name_lower) {
+				// because of frame_Dispatch...we use into. Note: outer fn must always return Some(())
+				Ok(_) => Err(Error::<T>::DuplicateName.into()),
+				Err(index) => {
+					// aggregate metadata, and place things in storage
+					let met = MetaData { project_name, project_socials, founder_socials };
+					let name_lower2 = name_lower.to_vec();
+					// Should not panic! since binarysearch should yield appropriate index
+					names.insert(index, name_lower);
+					<ProjectNames<T>>::put(names);
+
+					let n_index = <ProjectIndex<T>>::get().unwrap_or_default();
+					<Projects<T>>::insert(
+						n_index.clone(),
+						Project {
+							owner_id: who,
+							reviews: Option::None,
+							badge: Option::None,
+							metadata: met,
+							proposal_status: Default::default(),
+						},
+					);
+					<ProjectIndex<T>>::put(n_index + 1);
+					Self::deposit_event(Event::ProjectCreated(name_lower2));
+					Ok(())
+				}
+			}
+		}
+
+		#[pallet::weight(10_000)]
+		pub fn mint(origin: OriginFor<T>, x: BalanceOf<T>) -> DispatchResult {
+			// call its ensure origin
+			let _who = T::ApprovedOrigin::ensure_origin(origin)?;
+			// then check subsume our balance - ToDo
+
+			Self::deposit_event(Event::Minted(x.clone()));
+			Ok(())
 		}
 	}
 }
