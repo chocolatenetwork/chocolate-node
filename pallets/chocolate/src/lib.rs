@@ -29,7 +29,10 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use sp_std::mem::{discriminant, Discriminant};
 	use sp_std::str;
+	use sp_std::vec;
 	use sp_std::vec::Vec;
+	// for serialised and deserialised impl req for genesis
+
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -40,6 +43,8 @@ pub mod pallet {
 		type ApprovedOrigin: EnsureOrigin<Self::Origin>;
 		/// The currency trait, associated to the pallet. All methods accessible from T::Currency*
 		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
+		// / Include a type identifier for a project
+		// type ProjectIdentifier: Member + Parameter;
 		//  In this case pallet_collective implements it as type Origin: From<RawOrigin<Self::AccountId, I>>;
 		// type ApprovedOrigin : EnsureOrigin<Self::Origin>;
 		// treasury Id??
@@ -151,9 +156,14 @@ pub mod pallet {
 		founder_socials: Vec<Social>,
 	}
 
+	// only in std envs
+	#[cfg(feature = "std")]
+	pub use serde::{Deserialize, Serialize};
+
 	/// The status of the proposal
 	#[derive(Encode, Decode, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
+	#[cfg_attr(feature = "std", derive(Deserialize, Serialize))]
 	pub enum Status {
 		///Proposal created
 		Proposed,
@@ -165,6 +175,7 @@ pub mod pallet {
 	/// Reason for the current status - Required for rejected proposal.
 	#[derive(Encode, Decode, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
+	#[cfg_attr(feature = "std", derive(Deserialize, Serialize))]
 	pub enum Reason {
 		/// Custom reason to encapsulate further things like marketCap and other details
 		Other(Vec<u8>),
@@ -196,7 +207,7 @@ pub mod pallet {
 			Reason::PassedRequirements
 		}
 	}
-	/// The project structure. Initial creation req signed transaction.
+	/// The project structure. Initial creation req signed transaction. - Serialize/deserialise required for genesis
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct Project<UserID> {
@@ -387,6 +398,94 @@ pub mod pallet {
 
 			Self::deposit_event(Event::Minted(x.clone()));
 			Ok(())
+		}
+	}
+	/// A separate impl pallet<T> for custom functions external to callables
+	impl<T: Config> Pallet<T> {
+		/// Helper functions
+		/// Parameters: owner_name: This is an encoded string, which we'll derive from a regular rust string or TextAl as used.
+		/// The owner_name will be decoded to utf-8 in the body for manipulation to social metadata. It will be used to derive the project_name too if it won't be too much an issue
+		pub fn initialize_projects(
+			this_owner_id: T::AccountId,
+			this_owner_name: Vec<u8>,
+			this_status: Status,
+			this_reason: Reason,
+		) -> ProjectAl<T> {
+			// gather metadata - name
+			let name = str::from_utf8(&this_owner_name).unwrap_or_default();
+			// gather metadata - socials.
+			// change to utf8 for manipulation
+			let proj_name = [&name, "_Inc"].join("");
+			let social_rep = [&name, "Inc"].join("");
+			let soc1 = Social::Email([&social_rep, "@gmail.com"].join("").encode());
+			let soc2 = Social::Facebook(social_rep.encode());
+			let fsoc = ["founder_", &name, "_delores"].join("").encode();
+			let fsoc1 = Social::Facebook(fsoc.clone());
+			let fsoc2 = Social::Twitter(fsoc);
+			let meta = MetaData {
+				project_name: proj_name.encode(),
+				project_socials: vec![soc1, soc2],
+				founder_socials: vec![fsoc1, fsoc2],
+			};
+
+			let returnable = Project {
+				owner_id: this_owner_id,
+				reviews: Option::None,
+				badge: Option::None,
+				metadata: meta,
+				proposal_status: ProposalStatus { status: this_status, reason: this_reason },
+			};
+
+			returnable
+			// let projSocial: ProjectSocials =vec![Social::Email()]  ;
+			// Should return a project that manipulates name and owner id for socials.
+			// The project can then be put in storage from the overarching map that passes these params
+		}
+	}
+	/// Genesis config for the chocolate pallet
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		/// GEt the parameters for the init projects function instead
+		// Just import strings and pattern match. The world won't end.
+		pub init_projects: Vec<(T::AccountId, Vec<u8>, Status, Reason)>,
+		// There will be another entry for reviews - create only if prev passed.
+	}
+	/// By default a generic project or known projects will be shown - polkadot & sisters
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			// actually make this known projects. In the meantime, default will do.
+			Self { init_projects: Vec::new() }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			// setup a counter to serve as project index
+			let mut count: ProjectID = 0;
+			// get the projects and insert to storage with name
+			for each in (&self.init_projects).into_iter() {
+				let (acnt, name, stat, reas) = each.to_owned();
+				let owned_name = str::from_utf8(&name).unwrap_or_default().to_owned();
+				let returnable =
+					Pallet::<T>::initialize_projects(acnt, owned_name.encode(), stat, reas);
+				let ret_count = count;
+				<Projects<T>>::insert(ret_count, returnable);
+				let mut names = <ProjectNames<T>>::get().unwrap_or_default();
+				let lower_name = str::from_utf8(&name).unwrap_or("Unknown").to_lowercase().encode();
+				// keep sorted names
+				match names.binary_search(&lower_name.encode()) {
+					Ok(_) => (),
+					Err(index) => {
+						names.insert(index, lower_name);
+						<ProjectNames<T>>::put(names);
+
+						count += 1;
+					}
+				}
+			}
+			<ProjectIndex<T>>::put(count);
 		}
 	}
 }
