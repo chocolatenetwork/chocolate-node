@@ -31,7 +31,6 @@ pub mod pallet {
 	use sp_std::str;
 	use sp_std::vec;
 	use sp_std::vec::Vec;
-	// for serialised and deserialised impl req for genesis
 
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -43,13 +42,6 @@ pub mod pallet {
 		type ApprovedOrigin: EnsureOrigin<Self::Origin>;
 		/// The currency trait, associated to the pallet. All methods accessible from T::Currency*
 		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
-		// / Include a type identifier for a project
-		// type ProjectIdentifier: Member + Parameter;
-		//  In this case pallet_collective implements it as type Origin: From<RawOrigin<Self::AccountId, I>>;
-		// type ApprovedOrigin : EnsureOrigin<Self::Origin>;
-		// treasury Id??
-		// type TreasuryPalletId;
-		// The pallet depends on the treasury's definition of proposal id
 	}
 	/// type alias for text
 	pub type TextAl = Vec<u8>;
@@ -80,10 +72,8 @@ pub mod pallet {
 		review_text: Vec<u8>,
 		project_id: ProjectID,
 	}
-	/// social type, the cfg_Attr is cuz std isn't guaranteed
 	/// Socials are equal only if they point to the same string.
 	/// This is already implemented by the derive! - PartialEq,
-	/// The social enum is complete. I see no reason why vscode is showing err as Vec<u8> is impl by parity
 	#[derive(Encode, Decode, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub enum Social {
@@ -117,7 +107,6 @@ pub mod pallet {
 
 			// loop
 			for n in cp.iter() {
-				// Functions take type arguments as ::<>
 				let disc = discriminant::<Social>(n);
 				if disc_mem.contains(&disc) {
 					dupl = true;
@@ -134,7 +123,6 @@ pub mod pallet {
 			let test = Social::Email(b"wasm".to_vec());
 			// loop
 			for n in cp.iter() {
-				// Functions take type arguments as ::<>
 				let disc = discriminant::<Social>(n);
 				if disc == discriminant::<Social>(&test) {
 					passed = true;
@@ -144,19 +132,17 @@ pub mod pallet {
 			passed
 		}
 	}
-	/// The metadata of a project. The debug trait is actually a limit of T: Config
+	/// The metadata of a project. Eventually move to ipfs
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct MetaData {
 		project_name: Vec<u8>,
 		/// Vector, preferably a set. In terms of type. Done.
 		project_socials: ProjectSocials,
-		/// Vector, can contain multiple of same type, just not same value. Allow users to fix such.
-		///  It's their responsibility not to try hacking and putting too much. Ui- store as set
+		/// Vector, can contain multiple of same type, just not same value.
 		founder_socials: Vec<Social>,
 	}
 
-	// only in std envs
 	#[cfg(feature = "std")]
 	pub use serde::{Deserialize, Serialize};
 
@@ -186,28 +172,26 @@ pub mod pallet {
 		/// Positive neutral, covers rank up to accepted.
 		PassedRequirements,
 	}
-	/// The status of a proposal sent to the council from here. (Unnecessary?)NO. Its call can have a soft limit of any council member.
+	/// The status of a proposal sent to the council from here. 
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct ProposalStatus {
-		/// Doing this to learn pattern matching and stuff. It would also be a good util for reviews.
 		status: Status,
 		reason: Reason,
 	}
-	/// Implementing default for the enums, as req by storage
-	/// Default status
+	/// Default status - storage req
 	impl Default for Status {
 		fn default() -> Self {
 			Status::Proposed
 		}
 	}
-	/// Default reason
+	/// Default reason - storage req
 	impl Default for Reason {
 		fn default() -> Self {
 			Reason::PassedRequirements
 		}
 	}
-	/// The project structure. Initial creation req signed transaction. - Serialize/deserialise required for genesis
+	/// The project structure.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct Project<UserID> {
@@ -348,7 +332,6 @@ pub mod pallet {
 			// <Project name validation> - get name for validation
 			let name = str::from_utf8(&project_name);
 			ensure!(name.is_ok(), Error::<T>::InvalidName);
-			// should already be averted...but just in case.
 			// Ensure we have an actual value
 			let mut name_lower = name.unwrap_or_default().to_lowercase().encode();
 			let def: &str = Default::default();
@@ -362,13 +345,12 @@ pub mod pallet {
 			// ensure no duplicate names.
 			let mut names = <ProjectNames<T>>::get().unwrap_or_default();
 			match names.binary_search(&name_lower) {
-				// because of frame_Dispatch...we use into. Note: outer fn must always return Some(())
 				Ok(_) => Err(Error::<T>::DuplicateName.into()),
 				Err(index) => {
 					// aggregate metadata, and place things in storage
 					let met = MetaData { project_name, project_socials, founder_socials };
 					let name_lower2 = name_lower.to_vec();
-					// Should not panic! since binarysearch should yield appropriate index
+					// Should not panic! since binary search should yield appropriate index
 					names.insert(index, name_lower);
 					<ProjectNames<T>>::put(names);
 
@@ -402,9 +384,9 @@ pub mod pallet {
 	}
 	/// A separate impl pallet<T> for custom functions external to callables
 	impl<T: Config> Pallet<T> {
-		/// Helper functions
-		/// Parameters: owner_name: This is an encoded string, which we'll derive from a regular rust string or TextAl as used.
-		/// The owner_name will be decoded to utf-8 in the body for manipulation to social metadata. It will be used to derive the project_name too if it won't be too much an issue
+		/// Parameters: owner_name: This is an &str converted to_Vec()
+		/// The owner_name will be decoded to utf-8 in the body for manipulation to derive metadata.
+		/// Eventaully refactor to ipfs storage.
 		pub fn initialize_projects(
 			this_owner_id: T::AccountId,
 			this_owner_name: Vec<u8>,
@@ -437,16 +419,12 @@ pub mod pallet {
 			};
 
 			returnable
-			// let projSocial: ProjectSocials =vec![Social::Email()]  ;
-			// Should return a project that manipulates name and owner id for socials.
-			// The project can then be put in storage from the overarching map that passes these params
 		}
 	}
 	/// Genesis config for the chocolate pallet
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
-		/// GEt the parameters for the init projects function instead
-		// Just import strings and pattern match. The world won't end.
+		/// GEt the parameters for the init projects function
 		pub init_projects: Vec<(T::AccountId, Vec<u8>, Status, Reason)>,
 		// There will be another entry for reviews - create only if prev passed.
 	}
@@ -454,7 +432,7 @@ pub mod pallet {
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
-			// actually make this known projects. In the meantime, default will do.
+			// to-do actually make this known projects. In the meantime, default will do.
 			Self { init_projects: Vec::new() }
 		}
 	}

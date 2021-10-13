@@ -185,7 +185,6 @@ fn testnet_genesis(
 		// this isn't dynamic as we do not know the data passed.
 		chocolate_module: ChocolateModuleConfig {
 			init_projects: {
-				// let mut e: Vec<AccountId> = endowed_accounts.iter().cloned().collect();
 				let e: Vec<AccountId> = vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
@@ -201,7 +200,7 @@ fn testnet_genesis(
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 				];
 				let ps_req = Reason::PassedRequirements;
-				// use a static list. This is local_Testnet
+				// use a static list for accounts
 
 				vec![
 					(e[0].clone(), b"Alice".to_vec(), Status::Accepted, ps_req.clone()),
