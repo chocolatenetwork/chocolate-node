@@ -78,11 +78,18 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
+# added pallets
+[dependencies.serde]
+version = "1.0.126"
+optional = true
+features = ['derive']
+
 
 [features]
 default = ['std']
 runtime-benchmarks = ['frame-benchmarking']
 std = [
+    'serde',
     'codec/std',
     'sp-std/std',
     'frame-support/std',

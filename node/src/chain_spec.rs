@@ -1,7 +1,9 @@
 // The extra import : CHOC could be moved to currency part of constants.
 use chocolate_runtime::{
-	AccountId, AuraConfig, Balance, BalancesConfig, CouncilConfig, ElectionsConfig, GenesisConfig,
-	GrandpaConfig, Signature, SudoConfig, SystemConfig, CHOC, WASM_BINARY,
+	pallet_chocolate::{Reason, Status},
+	AccountId, AuraConfig, Balance, BalancesConfig, ChocolateModuleConfig, CouncilConfig,
+	ElectionsConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, CHOC,
+	WASM_BINARY,
 };
 use sc_service::{ChainType, Properties};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -160,7 +162,7 @@ fn testnet_genesis(
 		elections: ElectionsConfig {
 			// configure all members to have an initial 'stash' backing, or elect them
 			// - These map to our default members of Council Collective - If not changed, council remains constant for n period
-			// Elect only half endowed accounts initially - Alice and Bob  - Backed with 1M each. 
+			// Elect only half endowed accounts initially - Alice and Bob  - Backed with 1M each.
 			members: endowed_accounts
 				.iter()
 				.take((num_endowed_accounts + 1) / 2)
@@ -179,6 +181,38 @@ fn testnet_genesis(
 		sudo: SudoConfig {
 			// Assign network admin rights.
 			key: root_key,
+		},
+		// this isn't dynamic as we do not know the data passed.
+		chocolate_module: ChocolateModuleConfig {
+			init_projects: {
+				let e: Vec<AccountId> = vec![
+					get_account_id_from_seed::<sr25519::Public>("Alice"),
+					get_account_id_from_seed::<sr25519::Public>("Bob"),
+					get_account_id_from_seed::<sr25519::Public>("Charlie"),
+					get_account_id_from_seed::<sr25519::Public>("Dave"),
+					get_account_id_from_seed::<sr25519::Public>("Eve"),
+					get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+					get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+					get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+					get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+					get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+				];
+				let ps_req = Reason::PassedRequirements;
+				// use a static list for accounts
+
+				vec![
+					(e[0].clone(), b"Alice".to_vec(), Status::Accepted, ps_req.clone()),
+					(e[1].clone(), b"Bob".to_vec(), Status::Rejected, Reason::Malicious),
+					(e[2].clone(), b"Charlie".to_vec(), Status::Accepted, ps_req.clone()),
+					(e[3].clone(), b"Dave".to_vec(), Status::Proposed, ps_req.clone()),
+					(e[4].clone(), b"Eve".to_vec(), Status::Proposed, ps_req.clone()),
+					(e[5].clone(), b"Ferdie".to_vec(), Status::Accepted, ps_req.clone()),
+					(e[6].clone(), b"Alice_Stash".to_vec(), Status::Accepted, ps_req.clone()),
+					(e[7].clone(), b"Bob_Stash".to_vec(), Status::Accepted, ps_req.clone()),
+				]
+			},
 		},
 	}
 }
