@@ -8,9 +8,9 @@ pub mod project {
 	];
 
 	pub const REVS: [&[u8]; 4] = [
-		b"QmXRkJUJdCFXW5wY1uMJCMnveiNaLVgwPjVdEKEdDRpstT",
-		b"QmYH2Wmmrw2z3BCFPyKx5M4vCqe3y746jn2wtFGvLrAzc1",
-		b"QmYH2Wmmrw2z3BCFPyKx5M4vCqe3y746jn2wtFGvLrAzc1",
-		b"QmXRkJUJdCFXW5wY1uMJCMnveiNaLVgwPjVdEKEdDRpstT",
+		b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review1.json",
+		b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review2.json",
+		b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review3.json",
+		b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review4.json",
 	];
 }

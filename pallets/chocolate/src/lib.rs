@@ -27,12 +27,9 @@ pub mod pallet {
 			Currency, ExistenceRequirement::KeepAlive, Imbalance, OnUnbalanced, ReservableCurrency,
 			WithdrawReasons,
 		},
-		PalletId,
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_std::mem::{discriminant, Discriminant};
 	use sp_std::str;
-	use sp_std::vec;
 	use sp_std::vec::Vec;
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
