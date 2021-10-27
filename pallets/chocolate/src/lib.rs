@@ -15,8 +15,11 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+pub mod constants;
+
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::constants::project;
 	use frame_support::{
 		dispatch::DispatchResult,
 		pallet_prelude::*,
@@ -31,7 +34,6 @@ pub mod pallet {
 	use sp_std::str;
 	use sp_std::vec;
 	use sp_std::vec::Vec;
-
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -45,12 +47,8 @@ pub mod pallet {
 	}
 	/// type alias for text
 	pub type TextAl = Vec<u8>;
-	/// A list of names, an alias for project names
-	pub type ListOfNames = Vec<Vec<u8>>;
 	/// A simple u32
 	pub type ProjectID = u32;
-	/// type alias for project socials
-	pub type ProjectSocials = Vec<Social>;
 	/// Index for reviews , use to link to project
 	pub type ReviewID = u64;
 	/// type alias for review - this is the base struct, like the 2nd part of Balancesof
@@ -69,79 +67,12 @@ pub mod pallet {
 	pub struct Review<UserID> {
 		proposal_status: ProposalStatus,
 		user_id: UserID,
-		review_text: Vec<u8>,
+		content: Vec<u8>,
 		project_id: ProjectID,
 	}
-	/// Socials are equal only if they point to the same string.
-	/// This is already implemented by the derive! - PartialEq,
-	#[derive(Encode, Decode, Clone, PartialEq)]
-	#[cfg_attr(feature = "std", derive(Debug))]
-	pub enum Social {
-		Twitter(Vec<u8>),
-		Facebook(Vec<u8>),
-		Instagram(Vec<u8>),
-		Riot(Vec<u8>),
-		Email(Vec<u8>),
-		None,
-	}
-	/// By default no value
-	impl Default for Social {
-		fn default() -> Self {
-			Social::None
-		}
-	}
-	/// Trait that enforces requirements of projectSocials.
-	pub trait ProjectSocialReqs {
-		/// Check if a vector contains duplicate instances of an enum variant, regardless of data stored
-		fn abstr_dup(&self) -> bool;
-		/// Also check if the project has an email
-		fn has_email(&self) -> bool;
-	}
-	impl ProjectSocialReqs for ProjectSocials {
-		fn abstr_dup(&self) -> bool {
-			// memo for the discriminants
-			let mut disc_mem: Vec<Discriminant<Social>> = Vec::new();
-			// copy of self for iter
-			let cp = (&self).to_vec();
-			let mut dupl = false;
 
-			// loop
-			for n in cp.iter() {
-				let disc = discriminant::<Social>(n);
-				if disc_mem.contains(&disc) {
-					dupl = true;
-					break;
-				};
-				disc_mem.push(disc);
-			}
-			dupl
-		}
-		fn has_email(&self) -> bool {
-			// copy of self for iter
-			let cp = (&self).to_vec();
-			let mut passed = false;
-			let test = Social::Email(b"wasm".to_vec());
-			// loop
-			for n in cp.iter() {
-				let disc = discriminant::<Social>(n);
-				if disc == discriminant::<Social>(&test) {
-					passed = true;
-					break;
-				};
-			}
-			passed
-		}
-	}
-	/// The metadata of a project. Eventually move to ipfs
-	#[derive(Encode, Decode, Default, Clone, PartialEq)]
-	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct MetaData {
-		project_name: Vec<u8>,
-		/// Vector, preferably a set. In terms of type. Done.
-		project_socials: ProjectSocials,
-		/// Vector, can contain multiple of same type, just not same value.
-		founder_socials: Vec<Social>,
-	}
+	/// The metadata of a project.
+	type MetaData = Vec<u8>;
 
 	#[cfg(feature = "std")]
 	pub use serde::{Deserialize, Serialize};
@@ -172,7 +103,7 @@ pub mod pallet {
 		/// Positive neutral, covers rank up to accepted.
 		PassedRequirements,
 	}
-	/// The status of a proposal sent to the council from here. 
+	/// The status of a proposal sent to the council from here.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
 	pub struct ProposalStatus {
@@ -224,9 +155,6 @@ pub mod pallet {
 	/// Storage value for reviews index. Increment as we go
 	#[pallet::storage]
 	pub type ReviewIndex<T: Config> = StorageValue<_, ReviewID>;
-	/// Storage value for project names. Keep sorted.
-	#[pallet::storage]
-	pub type ProjectNames<T: Config> = StorageValue<_, ListOfNames>;
 	// The pallet's runtime storage items.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/storage
 	#[pallet::storage]
@@ -244,8 +172,8 @@ pub mod pallet {
 		/// Event documentation should end with an array that provides descriptive names for event
 		/// parameters. [something, who]
 		SomethingStored(u32, T::AccountId),
-		/// parameters. [owner,name]
-		ProjectCreated(Vec<u8>),
+		/// parameters. [owner,cid]
+		ProjectCreated(T::AccountId, Vec<u8>),
 		/// Minted [amount]
 		Minted(BalanceOf<T>),
 	}
@@ -253,21 +181,6 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		/// The project must have at least one email in metadata
-		NoEmail,
-		/// A project must have at least two means of contact including email
-		LessProjectSocials,
-		/// Duplicate project socials
-		DuplicateProjectSocials,
-		/// Insufficient founder socials! Must be >=2
-		LessFounderSocials,
-		/// The origin dispatched from does not match the owner of the project
-		InvalidOwner,
-		/// The name given cannot be parsed
-		InvalidName,
-		/// Another project has the same name
-		DuplicateName,
-		/// Error names should be descriptive.
 		NoneValue,
 		/// Errors should have helpful documentation associated with them.
 		StorageOverflow,
@@ -317,59 +230,22 @@ pub mod pallet {
 		// Refactor TO-DO: Abstract validation into a function and generalise.
 		/// Create a project
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,3))]
-		pub fn create_project(
-			origin: OriginFor<T>,
-			project_name: TextAl,
-			founder_socials: Vec<Social>,
-			project_socials: ProjectSocials,
-		) -> DispatchResult {
+		pub fn create_project(origin: OriginFor<T>, project_meta: Vec<u8>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
-			// ensure at least two unique project_Socials and founder_socials, enforce project emails
-			ensure!(!(project_socials.abstr_dup()), Error::<T>::DuplicateProjectSocials);
-			ensure!(project_socials.has_email(), Error::<T>::NoEmail);
-			ensure!(founder_socials.len() >= 2, Error::<T>::LessFounderSocials);
-			ensure!(project_socials.len() >= 2, Error::<T>::LessProjectSocials);
-			// <Project name validation> - get name for validation
-			let name = str::from_utf8(&project_name);
-			ensure!(name.is_ok(), Error::<T>::InvalidName);
-			// Ensure we have an actual value
-			let mut name_lower = name.unwrap_or_default().to_lowercase().encode();
-			let def: &str = Default::default();
-			ensure!(name_lower != def.encode(), Error::<T>::InvalidName);
-			// ignore if already lowercase
-			if name.unwrap_or_default().to_lowercase() == name.unwrap_or_default() {
-				name_lower = name.unwrap_or_default().encode();
-			}
-			// </Project name validation>
-
-			// ensure no duplicate names.
-			let mut names = <ProjectNames<T>>::get().unwrap_or_default();
-			match names.binary_search(&name_lower) {
-				Ok(_) => Err(Error::<T>::DuplicateName.into()),
-				Err(index) => {
-					// aggregate metadata, and place things in storage
-					let met = MetaData { project_name, project_socials, founder_socials };
-					let name_lower2 = name_lower.to_vec();
-					// Should not panic! since binary search should yield appropriate index
-					names.insert(index, name_lower);
-					<ProjectNames<T>>::put(names);
-
-					let n_index = <ProjectIndex<T>>::get().unwrap_or_default();
-					<Projects<T>>::insert(
-						n_index.clone(),
-						Project {
-							owner_id: who,
-							reviews: Option::None,
-							badge: Option::None,
-							metadata: met,
-							proposal_status: Default::default(),
-						},
-					);
-					<ProjectIndex<T>>::put(n_index + 1);
-					Self::deposit_event(Event::ProjectCreated(name_lower2));
-					Ok(())
-				}
-			}
+			let n_index = <ProjectIndex<T>>::get().unwrap_or_default();
+			<Projects<T>>::insert(
+				n_index.clone(),
+				Project {
+					owner_id: who.clone(),
+					reviews: Option::None,
+					badge: Option::None,
+					metadata: project_meta.clone(),
+					proposal_status: Default::default(),
+				},
+			);
+			<ProjectIndex<T>>::put(n_index + 1);
+			Self::deposit_event(Event::ProjectCreated(who, project_meta));
+			Ok(())
 		}
 
 		#[pallet::weight(10_000)]
@@ -389,43 +265,55 @@ pub mod pallet {
 		/// Eventaully refactor to ipfs storage.
 		pub fn initialize_projects(
 			this_owner_id: T::AccountId,
-			this_owner_name: Vec<u8>,
+			this_meta: Vec<u8>,
+			this_revs: Vec<ReviewID>,
 			this_status: Status,
 			this_reason: Reason,
 		) -> ProjectAl<T> {
-			// gather metadata - name
-			let name = str::from_utf8(&this_owner_name).unwrap_or_default();
-			// gather metadata - socials.
-			// change to utf8 for manipulation
-			let proj_name = [&name, "_Inc"].join("");
-			let social_rep = [&name, "Inc"].join("");
-			let soc1 = Social::Email([&social_rep, "@gmail.com"].join("").encode());
-			let soc2 = Social::Facebook(social_rep.encode());
-			let fsoc = ["founder_", &name, "_delores"].join("").encode();
-			let fsoc1 = Social::Facebook(fsoc.clone());
-			let fsoc2 = Social::Twitter(fsoc);
-			let meta = MetaData {
-				project_name: proj_name.encode(),
-				project_socials: vec![soc1, soc2],
-				founder_socials: vec![fsoc1, fsoc2],
-			};
-
 			let returnable = Project {
 				owner_id: this_owner_id,
-				reviews: Option::None,
+				reviews: Option::Some(this_revs),
 				badge: Option::None,
-				metadata: meta,
+				metadata: this_meta,
 				proposal_status: ProposalStatus { status: this_status, reason: this_reason },
 			};
 
 			returnable
+		}
+		pub fn initialize_reviews(acnt_ids: Vec<T::AccountId>) -> Vec<ReviewID> {
+			let clns = acnt_ids.iter().clone();
+			let mut last_index = <ReviewIndex<T>>::get().unwrap_or_default();
+			let last_prj = <ProjectIndex<T>>::get().unwrap_or_default();
+			let list_of_revs: Vec<ReviewAl<T>> = project::REVS
+				.iter()
+				.clone()
+				.zip(clns)
+				.map(|(rev, id)| Review {
+					project_id: last_prj,
+					proposal_status: ProposalStatus {
+						status: Status::Accepted,
+						reason: Default::default(),
+					},
+					content: rev.to_vec(),
+					user_id: id.clone(),
+				})
+				.collect();
+			let mut list_of_indexes: Vec<ReviewID> = Vec::new();
+			for elem in list_of_revs.iter() {
+				// shouldn't panic because we aren't placingg more than four in.
+				<Reviews<T>>::insert(last_index, elem);
+				list_of_indexes.push(last_index.clone());
+				last_index += 1;
+			}
+			<ReviewIndex<T>>::put(last_index);
+			return list_of_indexes;
 		}
 	}
 	/// Genesis config for the chocolate pallet
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		/// GEt the parameters for the init projects function
-		pub init_projects: Vec<(T::AccountId, Vec<u8>, Status, Reason)>,
+		pub init_projects: Vec<(T::AccountId, Status, Reason)>,
 		// There will be another entry for reviews - create only if prev passed.
 	}
 	/// By default a generic project or known projects will be shown - polkadot & sisters
@@ -443,27 +331,26 @@ pub mod pallet {
 			// setup a counter to serve as project index
 			let mut count: ProjectID = 0;
 			// get the projects and insert to storage with name
-			for each in (&self.init_projects).into_iter() {
-				let (acnt, name, stat, reas) = each.to_owned();
-				let owned_name = str::from_utf8(&name).unwrap_or_default().to_owned();
+			let meta: Vec<Vec<u8>> = project::METADATA.iter().map(|each| each.to_vec()).collect();
+			let zipped = (&self.init_projects).into_iter().clone().zip(meta.iter().clone());
+			for each in zipped {
+				let (prj, meta_ref) = each.to_owned();
+				let meta_cid = meta_ref.to_owned();
+				let (acnt, stat, reas) = prj.to_owned();
+				let filtered_ids: Vec<T::AccountId> = (&self.init_projects)
+					.into_iter()
+					.clone()
+					.filter(|(id, ..)| acnt.ne(id))
+					.map(|long| long.0.clone())
+					.collect();
+				let review_ids: Vec<ReviewID> = Pallet::<T>::initialize_reviews(filtered_ids);
 				let returnable =
-					Pallet::<T>::initialize_projects(acnt, owned_name.encode(), stat, reas);
+					Pallet::<T>::initialize_projects(acnt, meta_cid, review_ids, stat, reas);
 				let ret_count = count;
 				<Projects<T>>::insert(ret_count, returnable);
-				let mut names = <ProjectNames<T>>::get().unwrap_or_default();
-				let lower_name = str::from_utf8(&name).unwrap_or("Unknown").to_lowercase().encode();
-				// keep sorted names
-				match names.binary_search(&lower_name.encode()) {
-					Ok(_) => (),
-					Err(index) => {
-						names.insert(index, lower_name);
-						<ProjectNames<T>>::put(names);
-
-						count += 1;
-					}
-				}
+				count += 1;
+				<ProjectIndex<T>>::put(count);
 			}
-			<ProjectIndex<T>>::put(count);
 		}
 	}
 }
