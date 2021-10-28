@@ -203,14 +203,14 @@ fn testnet_genesis(
 				// use a static list for accounts
 
 				vec![
-					(e[0].clone(), b"Alice".to_vec(), Status::Accepted, ps_req.clone()),
-					(e[1].clone(), b"Bob".to_vec(), Status::Rejected, Reason::Malicious),
-					(e[2].clone(), b"Charlie".to_vec(), Status::Accepted, ps_req.clone()),
-					(e[3].clone(), b"Dave".to_vec(), Status::Proposed, ps_req.clone()),
-					(e[4].clone(), b"Eve".to_vec(), Status::Proposed, ps_req.clone()),
-					(e[5].clone(), b"Ferdie".to_vec(), Status::Accepted, ps_req.clone()),
-					(e[6].clone(), b"Alice_Stash".to_vec(), Status::Accepted, ps_req.clone()),
-					(e[7].clone(), b"Bob_Stash".to_vec(), Status::Accepted, ps_req.clone()),
+					(e[0].clone(), Status::Accepted, ps_req.clone()),
+					(e[1].clone(), Status::Rejected, Reason::Malicious),
+					(e[2].clone(), Status::Accepted, ps_req.clone()),
+					(e[3].clone(), Status::Accepted, ps_req.clone()),
+					(e[4].clone(), Status::Proposed, ps_req.clone()),
+					(e[5].clone(), Status::Accepted, ps_req.clone()),
+					(e[6].clone(), Status::Accepted, ps_req.clone()),
+					(e[7].clone(), Status::Accepted, ps_req.clone()),
 				]
 			},
 		},
