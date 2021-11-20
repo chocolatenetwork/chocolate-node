@@ -22,6 +22,12 @@ default-features = false
 path = '../pallets/users'
 version = '0.1.0'
 
+
+[dependencies.pallet-token]
+default-features = false
+path = '../pallets/token'
+version = '0.1.0'
+
 [build-dependencies.substrate-wasm-builder]
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
@@ -255,6 +261,7 @@ std = [
     'pallet-sudo/std',
     'pallet-chocolate/std',
     'pallet-users/std',
+    'pallet-token/std',
     'pallet-treasury/std',
     'pallet-collective/std',
     "pallet-elections-phragmen/std",

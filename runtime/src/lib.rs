@@ -50,10 +50,20 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Percent, Permill};
 
+
+
+///import the fungible token pallet
+
+
 /// Import the chocolate pallet.
 pub use pallet_chocolate;
 /// Import the users pallet
 pub use pallet_users;
+
+
+///import token pallet
+pub use pallet_token;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -123,7 +133,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// up by `pallet_aura` to implement `fn slot_duration()`.
 ///
 /// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
+pub const MILLISECS_PER_BLOCK: u64 = 2000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
@@ -179,6 +189,7 @@ parameter_types! {
 	pub BlockLength: frame_system::limits::BlockLength = frame_system::limits::BlockLength
 		::max_with_normal_ratio(5 * 1024 * 1024, NORMAL_DISPATCH_RATIO);
 	pub const SS58Prefix: u8 = 42;
+	// pub const MILLICENTS: Balance = 1_000_000_000;
 }
 
 // Configure FRAME pallets to include in runtime.
@@ -346,8 +357,22 @@ impl pallet_users::Config for Runtime {
 	type Event = Event;
 }
 
+/// configure the  pallet-token in pallet/token
+
+impl pallet_token::Config for Runtime{
+	type Event = Event;
+	type PalletId = TokenFungiblePalletId;
+	type FungibleTokenId = u32;
+	type StringLimit = StringLimit;
+	type CreateTokenDeposit = CreateTokenDeposit;
+	type Currency = Balances;
+}
+
+
 // Configure the council and its features
 parameter_types! {
+	pub const TokenFungiblePalletId: PalletId = PalletId(*b"w3g/tfpi");
+	pub const CreateTokenDeposit: Balance = 500 * MILLICENTICHOC;
 	pub const CouncilMotionDuration: BlockNumber = 5 * DAYS;
 	pub const CouncilMaxProposals: u32 = 100;
 	pub const CouncilMaxMembers: u32 = 100;
@@ -468,6 +493,8 @@ construct_runtime!(
 		// Include the custom logic from the pallet-chocolate in the runtime.
 		ChocolateModule: pallet_chocolate::{Pallet, Call, Storage, Event<T>},
 		UsersModule: pallet_users::{Pallet, Call, Storage, Event<T>},
+		TokenFungible:pallet_token::{Pallet,Call,Storage,Event<T>},
+		
 		// TREASURY
 		Council: pallet_collective::<Instance1>::{Pallet, Call, Storage, Origin<T>, Event<T>, Config<T>},
 		Treasury: pallet_treasury::{Pallet, Call, Storage, Config, Event<T>},
