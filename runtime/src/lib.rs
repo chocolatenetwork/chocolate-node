@@ -491,7 +491,7 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the pallet-chocolate in the runtime.
-		ChocolateModule: pallet_chocolate::{Pallet, Call, Storage, Event<T>},
+		ChocolateModule: pallet_chocolate::{Pallet, Call, Config<T>, Storage, Event<T>},
 		UsersModule: pallet_users::{Pallet, Call, Storage, Event<T>},
 		TokenFungible:pallet_token::{Pallet,Call,Storage,Event<T>},
 		
