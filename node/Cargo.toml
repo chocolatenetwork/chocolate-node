@@ -24,6 +24,10 @@ version = '3.0.0'
 path = '../runtime'
 version = '3.0.0-monthly-2021-08'
 
+[dependencies.chocolate-node-constants]
+path = '../primitives/chocolate-node-constants'
+version = '0.1.0'
+
 [dependencies]
 jsonrpc-core = '15.1.0'
 structopt = '0.3.8'

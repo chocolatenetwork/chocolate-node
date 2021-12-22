@@ -769,6 +769,7 @@ dependencies = [
 name = "chocolate"
 version = "0.1.0"
 dependencies = [
+ "chocolate-node-constants",
  "chocolate-runtime",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -804,9 +805,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "chocolate-node-constants"
+version = "0.1.0"
+
+[[package]]
+name = "chocolate-projects"
+version = "0.1.0"
+
+[[package]]
 name = "chocolate-runtime"
 version = "3.0.0-monthly-2021-08"
 dependencies = [
+ "chocolate-node-constants",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -843,6 +853,10 @@ dependencies = [
  "static_assertions",
  "substrate-wasm-builder",
 ]
+
+[[package]]
+name = "chocolate-users"
+version = "0.1.0"
 
 [[package]]
 name = "chrono"

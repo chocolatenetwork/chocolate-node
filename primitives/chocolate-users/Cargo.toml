@@ -1,0 +1,9 @@
+[package]
+name = "chocolate-users"
+version = "0.1.0"
+edition = "2021"
+description = "Primitives crate for chocolate users"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]

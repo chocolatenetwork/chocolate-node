@@ -12,6 +12,10 @@ version = '3.0.0-monthly-2021-08'
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
+[dependencies.chocolate-node-constants]
+path = '../primitives/chocolate-node-constants'
+version = '0.1.0'
+
 [dependencies.pallet-chocolate]
 default-features = false
 path = '../pallets/chocolate'
