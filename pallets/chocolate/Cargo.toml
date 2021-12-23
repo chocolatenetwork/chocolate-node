@@ -83,7 +83,16 @@ version = '4.0.0-dev'
 version = "1.0.126"
 optional = true
 features = ['derive']
-
+# # added dep
+[dependencies.chocolate-users]
+path = '../../primitives/chocolate-users'
+default-features = false
+version = '0.1.0'
+# # added dep
+[dependencies.chocolate-projects]
+path = '../../primitives/chocolate-projects'
+default-features = false
+version = '0.1.0'
 
 [features]
 default = ['std']
@@ -97,5 +106,8 @@ std = [
     'pallet-treasury/std',
     'pallet-balances/std',
     'frame-benchmarking/std',
+    # added
+    'chocolate-users/std',
+    'chocolate-projects/std',
 ]
 try-runtime = ['frame-support/try-runtime']

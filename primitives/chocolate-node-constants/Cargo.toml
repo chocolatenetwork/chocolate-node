@@ -1,9 +1,42 @@
 [package]
 name = "chocolate-node-constants"
-version = "0.1.0"
 edition = "2021"
 description = "Some constants for the chocolate node with helpful methods"
-
+version= "0.1.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
 
-[dependencies]
+[dependencies.codec]
+default-features = false
+features = ['derive']
+package = 'parity-scale-codec'
+version = '2.0.0'
+
+[dependencies.frame-system]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '4.0.0-dev'
+
+[dependencies.sp-core]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '4.0.0-dev'
+
+[dependencies.sp-runtime]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'monthly-2021-08'
+version = '4.0.0-dev'
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"frame-system/std",
+	"sp-core/std",
+	"sp-runtime/std",
+]
+

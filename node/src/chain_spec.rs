@@ -1,8 +1,8 @@
-// The extra import : CHOC could be moved to currency part of constants.
+use chocolate_node_constants::currency::CHOC;
 use chocolate_runtime::{
 	pallet_chocolate::{Reason, Status},
 	AccountId, AuraConfig, Balance, BalancesConfig, ChocolateModuleConfig, CouncilConfig,
-	ElectionsConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, CHOC,
+	ElectionsConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, 
 	WASM_BINARY,
 };
 use sc_service::{ChainType, Properties};

@@ -14,10 +14,10 @@ Built on Substrate.
 
 [![Substrate version](https://img.shields.io/badge/Substrate-3.0.0-brightgreen?logo=Parity%20Substrate)](https://substrate.dev/)
 [![Medium](https://img.shields.io/badge/Medium-Chocolate-brightgreen?logo=medium)](https://medium.com/)
+
 </div>
 
 ---
-
 
 # Substrate Node
 
@@ -188,6 +188,13 @@ A FRAME pallet is compromised of a number of blockchain primitives:
 - Errors: When a dispatchable fails, it returns an error.
 - Config: The `Config` configuration interface is used to define the types and parameters upon
   which a FRAME pallet depends.
+
+### primitives
+
+- This folder is customised for chocolate with packages that aren't part of runtime but shared across different pallets. Right now the package name is the same as the folder name for the packages inside primitives. This is simply for ease of use because it sort of gets confusing not knowing how packages and paths are different and trying to modularise things.
+- `chocolate-` is prefixed to the packages here for uniqueness, although we probably won't be publishing.
+
+<!-- Sounds good, or should we prioritise cleanness in package names? -->
 
 ### Run in Docker
 

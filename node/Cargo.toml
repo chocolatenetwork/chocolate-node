@@ -26,7 +26,7 @@ version = '3.0.0-monthly-2021-08'
 
 [dependencies.chocolate-node-constants]
 path = '../primitives/chocolate-node-constants'
-version = '0.1.0'
+version = '0.1.1'
 
 [dependencies]
 jsonrpc-core = '15.1.0'

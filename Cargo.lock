@@ -806,11 +806,30 @@ dependencies = [
 
 [[package]]
 name = "chocolate-node-constants"
-version = "0.1.0"
+version = "0.1.1"
+dependencies = [
+ "frame-system",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-runtime",
+]
 
 [[package]]
 name = "chocolate-projects"
 version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-treasury",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
 
 [[package]]
 name = "chocolate-runtime"
@@ -857,6 +876,17 @@ dependencies = [
 [[package]]
 name = "chocolate-users"
 version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
 
 [[package]]
 name = "chrono"
@@ -3933,6 +3963,8 @@ dependencies = [
 name = "pallet-chocolate"
 version = "0.1.0"
 dependencies = [
+ "chocolate-projects",
+ "chocolate-users",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -4129,6 +4161,7 @@ dependencies = [
 name = "pallet-users"
 version = "0.1.0"
 dependencies = [
+ "chocolate-users",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

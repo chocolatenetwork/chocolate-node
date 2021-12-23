@@ -14,7 +14,8 @@ targets = ['x86_64-unknown-linux-gnu']
 
 [dependencies.chocolate-node-constants]
 path = '../primitives/chocolate-node-constants'
-version = '0.1.0'
+version = "0.1.1"
+default-features = false
 
 [dependencies.pallet-chocolate]
 default-features = false
@@ -264,6 +265,7 @@ std = [
     "pallet-elections-phragmen/std",
     # Added custom, include for refactor
     # "node-primitives/std",
+    "chocolate-node-constants/std",
     'pallet-timestamp/std',
     'pallet-transaction-payment-rpc-runtime-api/std',
     'pallet-transaction-payment/std',
