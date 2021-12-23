@@ -1,8 +1,8 @@
 use chocolate_node_constants::currency::CHOC;
+use chocolate_projects::{Reason, Status};
 use chocolate_runtime::{
-	pallet_chocolate::{Reason, Status},
 	AccountId, AuraConfig, Balance, BalancesConfig, ChocolateModuleConfig, CouncilConfig,
-	ElectionsConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, 
+	ElectionsConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig,
 	WASM_BINARY,
 };
 use sc_service::{ChainType, Properties};

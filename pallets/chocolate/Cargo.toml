@@ -93,6 +93,11 @@ version = '0.1.0'
 path = '../../primitives/chocolate-projects'
 default-features = false
 version = '0.1.0'
+# # added dep - is this tight coupling??
+[dependencies.pallet-users]
+default-features = false
+path = '../users'
+version = '0.1.0'
 
 [features]
 default = ['std']
@@ -109,5 +114,6 @@ std = [
     # added
     'chocolate-users/std',
     'chocolate-projects/std',
+    'pallet-users/std',
 ]
 try-runtime = ['frame-support/try-runtime']

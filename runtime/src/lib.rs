@@ -50,11 +50,11 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Percent, Permill};
 
+pub use chocolate_node_constants::*;
 /// Import the chocolate pallet.
 pub use pallet_chocolate;
 /// Import the users pallet
 pub use pallet_users;
-pub use chocolate_node_constants::*;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
@@ -112,7 +112,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 };
 
 // Note: This could be later moved into a constants file - Separating time and currency, and importing primitives from node-primitives. Or here.
-
 
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
 	items as Balance * 15 * CENTICHOC + (bytes as Balance) * 6 * CENTICHOC
@@ -319,9 +318,9 @@ impl pallet_chocolate::Config for Runtime {
 		pallet_collective::EnsureProportionAtLeast<_3, _5, AccountId, CouncilCollective>,
 	>;
 	type Currency = Balances;
-	type TreasuryOutlet = Treasury; 
+	type TreasuryOutlet = Treasury;
 	type RewardCap = RewardCap;
-	
+	type UsersOutlet = UsersModule;
 }
 /// Configure the pallet-users in pallets/users.
 impl pallet_users::Config for Runtime {

@@ -2,6 +2,7 @@ use crate as pallet_chocolate;
 use frame_support::{parameter_types, traits::OnUnbalanced};
 use frame_system as system;
 use pallet_balances::NegativeImbalance;
+use pallet_users;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -22,6 +23,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		ChocolateModule: pallet_chocolate::{Pallet, Call, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		UsersModule: pallet_users::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -74,12 +76,17 @@ impl pallet_balances::Config for Test {
 	type AccountStore = System;
 	type WeightInfo = ();
 }
-// temp treasury that has implements unbalanced which stores outer state that can be queried
+// ToDo! temp treasury that has implements unbalanced which stores outer state that can be queried
 
+// This is a mock runtime hence we can't avoid importing users and other deps.
+/// Configure the pallet-users for UserIO trait
+impl pallet_users::Config for Test {
+	type Event = Event;
+}
 parameter_types! {
 	pub const Cap: u128 = 5 * 1;
 }
-// our configs start here	
+// our configs start here
 impl pallet_chocolate::Config for Test {
 	type Event = Event;
 	// no need to rope in collective pallet. we are enough
@@ -88,6 +95,7 @@ impl pallet_chocolate::Config for Test {
 	type Currency = Balances;
 	type TreasuryOutlet = ();
 	type RewardCap = Cap;
+	type UsersOutlet = UsersModule;
 }
 
 // construct a test that mocks treasury runtime but prints imbalance value instead

@@ -770,6 +770,7 @@ name = "chocolate"
 version = "0.1.0"
 dependencies = [
  "chocolate-node-constants",
+ "chocolate-projects",
  "chocolate-runtime",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -3970,6 +3971,7 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-treasury",
+ "pallet-users",
  "parity-scale-codec",
  "serde",
  "sp-core",
