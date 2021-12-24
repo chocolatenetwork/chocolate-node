@@ -114,7 +114,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 // Note: This could be later moved into a constants file - Separating time and currency, and importing primitives from node-primitives. Or here.
 
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 15 * CENTICHOC + (bytes as Balance) * 6 * CENTICHOC
+	items as Balance * 15 * CHOC + (bytes as Balance) * 6 * CHOC
 }
 
 type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
@@ -307,7 +307,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	pub const RewardCap: Balance = 50 * CHOC; // define choc well.
+	pub const RewardCap: Balance = 50 * HECTOCHOC;
 }
 /// Configure the pallet-chocolate in pallets/chocolate.
 impl pallet_chocolate::Config for Runtime {
@@ -348,7 +348,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 
 // council election method configuration
 parameter_types! {
-	pub const CandidacyBond: Balance = 10 * CHOC;
+	pub const CandidacyBond: Balance = 10 * HECTOCHOC;
 	// 1 storage item created, key size is 32 bytes, value size is 16+16.
 	pub const VotingBondBase: Balance = deposit(1, 64);
 	// additional data per vote is 32 bytes (account id).
@@ -385,20 +385,20 @@ impl pallet_elections_phragmen::Config for Runtime {
 // treasury config. To-Do: Impl SpendFund trait on reviews and give treasury money on start.
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 1 * CHOC;
+	pub const ProposalBondMinimum: Balance = 1 * HECTOCHOC;
 	pub const SpendPeriod: BlockNumber = 1 * DAYS;
 	pub const Burn: Permill = Permill::from_percent(50);
 	pub const TipCountdown: BlockNumber = 1 * DAYS;
 	pub const TipFindersFee: Percent = Percent::from_percent(20);
-	pub const TipReportDepositBase: Balance = 1 * CHOC;
-	pub const DataDepositPerByte: Balance = 1 * CENTICHOC;
-	pub const BountyDepositBase: Balance = 1 * CHOC;
+	pub const TipReportDepositBase: Balance = 1 * HECTOCHOC;
+	pub const DataDepositPerByte: Balance = 1 * CHOC;
+	pub const BountyDepositBase: Balance = 1 * HECTOCHOC;
 	pub const BountyDepositPayoutDelay: BlockNumber = 1 * DAYS;
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const BountyUpdatePeriod: BlockNumber = 14 * DAYS;
 	pub const MaximumReasonLength: u32 = 16384;
 	pub const BountyCuratorDeposit: Permill = Permill::from_percent(50);
-	pub const BountyValueMinimum: Balance = 5 * CHOC;
+	pub const BountyValueMinimum: Balance = 5 * HECTOCHOC;
 	pub const MaxApprovals: u32 = 100;
 }
 

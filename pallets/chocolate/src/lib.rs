@@ -163,7 +163,7 @@ pub mod pallet {
 			ensure!(!list_of_reviewers.contains(&who), Error::<T>::DuplicateReview);
 			ensure!(this_project.owner_id.ne(&who), Error::<T>::OwnerReviewedProject);
 			// MUTATIONS
-			// neither account ids nor the index should exceed max isize
+			// expect(neither account ids nor the index should exceed max isize)
 			list_of_reviewers.push(who.clone());
 			list_of_reviews.push(n_index.clone());
 			// STORAGE MUTATIONS
@@ -189,9 +189,10 @@ pub mod pallet {
 		pub fn mint(origin: OriginFor<T>, x: BalanceOf<T>) -> DispatchResult {
 			// call its ensure origin
 			let _who = T::ApprovedOrigin::ensure_origin(origin)?;
-			// then check subsume our balance - ToDo
-
-			Self::deposit_event(Event::Minted(x.clone()));
+			let imbalance = T::Currency::issue(x);
+			let minted = imbalance.peek();
+			Self::do_mint(imbalance);
+			Self::deposit_event(Event::Minted(minted));
 			Ok(())
 		}
 	}
@@ -212,6 +213,11 @@ pub mod pallet {
 
 	/// A separate impl pallet<T> for custom functions that aren't extrinsics
 	impl<T: Config> Pallet<T> {
+		/// Function to take negative imbalance to the treasury, expected to be called after creating one e.g through T::Currency::issue()
+		pub fn do_mint(amount: NegativeImbalanceOf<T>) {
+			T::TreasuryOutlet::on_unbalanced(amount);
+		}
+
 		/// Create a project from required data - only for genesis
 		pub fn initialize_projects(
 			this_owner_id: T::AccountId,
@@ -324,6 +330,9 @@ pub mod pallet {
 				count += 1;
 				<ProjectIndex<T>>::put(count);
 			}
+			// Fill the treasury - A little hack.
+			let imbalance = T::Currency::issue(T::RewardCap::get());
+			Pallet::<T>::do_mint(imbalance);
 		}
 	}
 }

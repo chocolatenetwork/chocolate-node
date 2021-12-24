@@ -1,4 +1,4 @@
-use chocolate_node_constants::currency::CHOC;
+use chocolate_node_constants::currency::HECTOCHOC;
 use chocolate_projects::{Reason, Status};
 use chocolate_runtime::{
 	AccountId, AuraConfig, Balance, BalancesConfig, ChocolateModuleConfig, CouncilConfig,
@@ -40,6 +40,8 @@ pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
 }
 
 // Generate Chain Properties for $CHOC token
+// Decimals -> 1 Balance unit = 10^-{Decimals}CHOC.
+// Taking example of this Instance -> 1 Balance unit = 10^-12 CHOC.
 pub fn chain_properties() -> Properties {
 	let mut properties = Properties::new();
 	properties.insert("tokenDecimals".into(), 12.into());
@@ -146,7 +148,7 @@ fn testnet_genesis(
 ) -> GenesisConfig {
 	let num_endowed_accounts = endowed_accounts.len();
 
-	const ENDOWMENT: Balance = 10_000_000 * CHOC;
+	const ENDOWMENT: Balance = 10_000_000 * HECTOCHOC;
 	const STASH: Balance = ENDOWMENT / 1000;
 	GenesisConfig {
 		system: SystemConfig {
@@ -155,14 +157,13 @@ fn testnet_genesis(
 			changes_trie_config: Default::default(),
 		},
 		balances: BalancesConfig {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			// configure with initial balance of endowment instead to test - Each person gets 1B choc.
+			// Configure endowed accounts with initial balance of ENDOWMENT.
 			balances: endowed_accounts.iter().cloned().map(|k| (k, ENDOWMENT)).collect(),
 		},
 		elections: ElectionsConfig {
 			// configure all members to have an initial 'stash' backing, or elect them
 			// - These map to our default members of Council Collective - If not changed, council remains constant for n period
-			// Elect only half endowed accounts initially - Alice and Bob  - Backed with 1M each.
+			// Elect only half endowed accounts initially - Alice and Bob  - Backed with 1M each - Based on 12 Decimal choc.
 			members: endowed_accounts
 				.iter()
 				.take((num_endowed_accounts + 1) / 2)
