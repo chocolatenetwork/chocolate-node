@@ -349,7 +349,7 @@ pub mod pallet {
 			project: &mut ProjectAl<T>,
 			review: &ReviewAl<T>,
 		) -> DispatchResult {
-			let reward = project.reward;
+			let reward = project.reward.clone();
 			// Reward calc
 			// reward is reward * (user_point/ttl_project_point )-- use fixed point.
 			// As it stands, == 0  due to integer division.
@@ -368,7 +368,7 @@ pub mod pallet {
 
 			// Mutations
 			Pallet::<T>::release_collateral(who)?;
-			Pallet::<T>::reward(project, reward).expect("should be able to reward"); // nothing should fail after release
+			Pallet::<T>::reward(project, reward_fraction).expect("should be able to reward"); // nothing should fail after release
 			T::Currency::transfer(&project.owner_id, who, reward_fraction, KeepAlive)
 				.expect("should be enough to safely transfer");
 			Ok(())
@@ -470,16 +470,21 @@ pub mod pallet {
 					review.point_snapshot = user.rank_points;
 					project.total_user_scores =
 						project.total_user_scores.saturating_add(user.rank_points);
-					let _ = Pallet::<T>::reward_user(id, project, &review)
-						.expect("The collateral and all exists");
+
 					T::UsersOutlet::update_user(id, user).expect("User should exist");
 					<Reviews<T>>::insert(id.clone(), count, review.clone());
 
 					review
 				})
 				.collect();
-			// storage mutations
 
+			// storage mutations
+			<Projects<T>>::mutate(count, |p| *p = Some(project.clone()));
+			for elem in list_of_revs.iter() {
+				let _ = Pallet::<T>::reward_user(&elem.user_id, project, &elem)
+					.expect("The collateral and all exists");
+				<Projects<T>>::mutate(count, |p| *p = Some(project.clone()));
+			}
 			list_of_revs
 		}
 	}
@@ -541,7 +546,7 @@ pub mod pallet {
 					Pallet::<T>::initialize_project(acnt, meta_cid, stat, reas, count);
 				let _reviews: Vec<_> =
 					Pallet::<T>::initialize_reviews(filtered_ids, &mut returnable, count);
-
+				// STORAGE MUTATIONS -- after due to mut
 				count += 1;
 				<NextProjectIndex<T>>::put(count);
 			}

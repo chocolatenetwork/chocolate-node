@@ -3,8 +3,7 @@
 use frame_support::dispatch::DispatchResult;
 use frame_system::Config;
 use sp_std::vec::Vec;
-/// type alias for text
-pub type TextAl = Vec<u8>;
+
 /// A simple u32
 pub type ProjectID = u32;
 /// Index for reviews , use to link to project
