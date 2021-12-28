@@ -17,6 +17,8 @@ pub struct Review<UserID> {
 	pub user_id: UserID,
 	pub content: Vec<u8>,
 	pub project_id: ProjectID,
+	/// A snapshot of the user's rank at the time of review
+	pub point_snapshot: u32,
 }
 
 /// The metadata of a project.
@@ -76,10 +78,6 @@ impl Default for Reason {
 pub struct Project<UserID, Balance> {
 	/// The owner of the project
 	pub owner_id: UserID,
-	/// A list of the project's reviewers for validation. (default: 0)
-	pub reviewers: Option<Vec<UserID>>,
-	/// A list of the project's reviews - Vec (default : none)
-	pub reviews: Option<Vec<ReviewID>>,
 	/// A bool that allows for simple allocation of the unique chocolate badge. NFT?? (default: false)
 	badge: Option<bool>,
 	/// Project metadata - req - default some .
@@ -88,20 +86,15 @@ pub struct Project<UserID, Balance> {
 	pub proposal_status: ProposalStatus,
 	/// A reward value for the project ---------_switch to idea of named reserve hash - (default: Reward).
 	pub reward: Balance,
+	/// A sum of all the scores of reviews proposed to the project. Saturate when u32::MAX.
+	pub total_user_scores: u32,
 }
 // ------------------------------------------------------------^edit
-impl<UserID, Balance> Project<UserID, Balance> {
-	/// (Trim) Set useful defaults.
-	pub fn new(
-		owner_id: UserID,
-		reviewers: Option<Vec<UserID>>,
-		reviews: Option<Vec<ReviewID>>,
-		badge: Option<bool>,
-		metadata: MetaData,
-		proposal_status: ProposalStatus,
-		reward: Balance,
-	) -> Self {
-		Project { owner_id, reviewers, reviews, badge, metadata, proposal_status, reward }
+impl<UserID: Default, Balance: From<u32> + Default> Project<UserID, Balance> {
+	///  Set useful defaults.
+	///  Initialises a project with defaults on everything except id and metadata
+	pub fn new(owner_id: UserID, metadata: MetaData) -> Self {
+		Project { owner_id, badge: Option::None, metadata, ..Default::default() }
 	}
 }
 /// A trait that allows project to:
@@ -109,7 +102,26 @@ impl<UserID, Balance> Project<UserID, Balance> {
 pub trait ProjectIO<T: Config> {
 	type UserID;
 	type Balance;
-
-	fn can_reward(project: &Project<Self::UserID, Self::Balance>) -> bool;
+	/// Checks:
+	/// If the projects' reward value reflects what is reserved, excluding existential value
+	fn check_reward(project: &Project<Self::UserID, Self::Balance>) -> DispatchResult;
+	/// Check if the project owner can offer up hardcoded amount as init.
+	fn can_reward(project: &Self::UserID) -> bool;
+	/// Reserve an initial amount for use as reward
 	fn reserve_reward(project: &mut Project<Self::UserID, Self::Balance>) -> DispatchResult;
+	/// Reward the user with an amount and effect edits on the struct level. (Exposes amount in free balance for next step (transfer))
+	/// Assumed to be executed right before the final balance transfer
+	/// Note: If any failure happens after, reward may be lost.
+	fn reward(
+		project: &mut Project<Self::UserID, Self::Balance>,
+		amount: Self::Balance,
+	) -> DispatchResult;
+}
+/// Easy way of differentaiting the two. We'll need this.
+#[derive(Encode, Decode, Clone, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+#[cfg_attr(feature = "std", derive(Deserialize, Serialize))]
+pub enum EntityKind {
+	Project,
+	User,
 }

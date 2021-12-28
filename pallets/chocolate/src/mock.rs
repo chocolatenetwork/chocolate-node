@@ -1,7 +1,6 @@
 use crate as pallet_chocolate;
-use frame_support::{parameter_types, traits::OnUnbalanced};
+use frame_support::parameter_types;
 use frame_system as system;
-use pallet_balances::NegativeImbalance;
 use pallet_users;
 use sp_core::H256;
 use sp_runtime::{
@@ -85,6 +84,7 @@ impl pallet_users::Config for Test {
 }
 parameter_types! {
 	pub const Cap: u128 = 5 * 1;
+	pub const UserCollateral: u128 = 1_000_000_000; // Look  into importing constants crate.
 }
 // our configs start here
 impl pallet_chocolate::Config for Test {
@@ -96,6 +96,7 @@ impl pallet_chocolate::Config for Test {
 	type TreasuryOutlet = ();
 	type RewardCap = Cap;
 	type UsersOutlet = UsersModule;
+	type UserCollateral = UserCollateral;
 }
 
 // construct a test that mocks treasury runtime but prints imbalance value instead

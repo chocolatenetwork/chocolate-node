@@ -12,7 +12,7 @@ readme = 'README.md'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
-
+# remove -dev???
 [dev-dependencies.serde]
 version = '1.0.126'
 
@@ -28,7 +28,7 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
 
-[dev-dependencies.sp-runtime]
+[dependencies.sp-runtime]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
