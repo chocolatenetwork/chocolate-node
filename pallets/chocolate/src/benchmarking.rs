@@ -1,16 +1,17 @@
 //! Benchmarking setup for pallet-chocolate
 
 use super::*;
-use crate::chocolate_users::Review;
 #[allow(unused)]
 use crate::Pallet as Chocolate;
+use chocolate_users::Review;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, whitelisted_caller};
+use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_system::RawOrigin;
 // calls do_something multiple times 0..100 inputs verifying it got stored each time
 benchmarks! { // comment for now, do_something is gone, but it's legacy remains
 	create_review {
 		let caller: T::AccountId = whitelisted_caller();
-		let s = "random".to_vec();
+		let s = (b"random").to_vec();
 		let prj_id = 1;
 		let rev = Review{
 			user_id: caller.clone(),
