@@ -331,6 +331,9 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
+parameter_types! {
+	pub const RewardCap: Balance = 50 * CHOC; // define choc well.
+}
 /// Configure the pallet-chocolate in pallets/chocolate.
 impl pallet_chocolate::Config for Runtime {
 	type Event = Event;
@@ -340,6 +343,9 @@ impl pallet_chocolate::Config for Runtime {
 		pallet_collective::EnsureProportionAtLeast<_3, _5, AccountId, CouncilCollective>,
 	>;
 	type Currency = Balances;
+	type TreasuryOutlet = Treasury; 
+	type RewardCap = RewardCap;
+	
 }
 /// Configure the pallet-users in pallets/users.
 impl pallet_users::Config for Runtime {
@@ -441,10 +447,6 @@ impl pallet_treasury::Config for Runtime {
 	type SpendPeriod = SpendPeriod;
 	type Burn = Burn;
 	type BurnDestination = ();
-	// Initially implemented for Bounties pallet. Use this to make the treasury spend funds for reviews
-	// say if the treasury still has funds, reward the review, otherwise return their payments. Also use subaccounts for staking hehe?
-	// set it up so that if the user is not rewarded, we simply give them an opportunity to take it up with the treasury later.
-	// set up treasury in a way that we always have enough to cater for bonuses of everyone on the system in an interest manner.
 	type SpendFunds = ();
 	type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
 	type MaxApprovals = MaxApprovals;

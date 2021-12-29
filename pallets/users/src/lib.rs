@@ -53,6 +53,7 @@ pub mod pallet {
 		#[derive(Encode, Decode, Default, Clone)]
 		pub struct User {
 			pub rank_points: u32,
+			pub project_id: Option<u32>
 		}
 	}
 
@@ -65,7 +66,13 @@ pub mod pallet {
 		/// User already exists
 		UserAlreadyExists,
 	}
-
+	pub trait UserIO<T: Config> {
+		fn get_user_by_id(id: &T::AccountId) -> Option<User>;
+		fn check_owns_project(id: &T::AccountId) -> bool;
+		fn check_user_exists(id: &T::AccountId) -> bool;
+		fn set_user(id: &T::AccountId, user: User) -> DispatchResult;
+		fn update_user(id: &T::AccountId, user: User) -> DispatchResult;
+	}
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		// use base weight then add on any additional operations
@@ -76,10 +83,33 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 
 			ensure!(!Users::<T>::contains_key(&who), Error::<T>::UserAlreadyExists);
-			<Users<T>>::insert(&who, User { rank_points: 0 });
+			<Users<T>>::insert(&who, User { rank_points: 0 , project_id: Option::None});
 
 			Self::deposit_event(Event::UserCreated(who));
 
+			Ok(())
+		}
+	}
+	impl<T: Config> UserIO<T> for Pallet<T>{
+		fn get_user_by_id(id: &T::AccountId) -> Option<User> {
+			Users::<T>::get(id)
+		}
+		fn check_owns_project(id: &T::AccountId) -> bool {
+			let user = Users::<T>::get(id).unwrap_or_default();
+			user.project_id.is_some()
+		}
+		fn check_user_exists(id: &T::AccountId) -> bool {
+			Users::<T>::contains_key(id)
+		}
+		/// Infallible. Simple inserts to storage. Your responsibility to ensure it doesn't already exist.
+		fn set_user(id: &T::AccountId, user: User) -> DispatchResult {
+			if Self::check_user_exists(id) { return Ok(()) }
+			<Users<T>>::insert(id, user);
+			Ok(())
+		}
+		fn update_user(id: &T::AccountId, user: User) -> DispatchResult {
+			if !Self::check_user_exists(id) { return Err(DispatchError::CannotLookup)  };
+			<Users<T>>::mutate(id, |u| *u = Some(user));
 			Ok(())
 		}
 	}

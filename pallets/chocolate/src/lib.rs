@@ -41,7 +41,14 @@ pub mod pallet {
 		type ApprovedOrigin: EnsureOrigin<Self::Origin>;
 		/// The currency trait, associated to the pallet. All methods accessible from T::Currency*
 		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
+		/// * Treasury outlet: A type with bounds to move slashed funds to the treasury.
+		type TreasuryOutlet: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		/// * Reward Cap: Max reward projects can place on themselves
+		#[pallet::constant]
+		type RewardCap: Get<BalanceOf<Self>>;
 	}
+	pub type NegativeImbalanceOf<T> =
+		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 	/// type alias for text
 	pub type TextAl = Vec<u8>;
 	/// A simple u32
@@ -51,13 +58,11 @@ pub mod pallet {
 	/// type alias for review - this is the base struct, like the 2nd part of Balancesof
 	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
 	/// type alias for project
-	pub type ProjectAl<T> = Project<<T as frame_system::Config>::AccountId>;
+	pub type ProjectAl<T> = Project<<T as frame_system::Config>::AccountId,BalanceOf<T>>;
 	/// Type alias for balance, binding T::Currency to Currency::AccountId and then extracting from that Balance. Accessible via T::BalanceOf. T is frame_System.
 	type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-	// Due to the complexity of storage, reviews will be limited to n amount. n = 50 . Should be enough to verify a project.
-	// runtime types;
 	use codec::{Decode, Encode};
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
@@ -122,7 +127,7 @@ pub mod pallet {
 	/// The project structure.
 	#[derive(Encode, Decode, Default, Clone, PartialEq)]
 	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct Project<UserID> {
+	pub struct Project<UserID,Balance> {
 		/// The owner of the project
 		owner_id: UserID,
 		/// A list of the project's reviewers for validation
@@ -135,8 +140,10 @@ pub mod pallet {
 		metadata: MetaData,
 		/// the status of the project's proposal in the council.
 		proposal_status: ProposalStatus,
+		/// A reward value for the project
+		reward: Balance,
 	}
-
+// ------------------------------------------------------------^edit
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
@@ -156,14 +163,6 @@ pub mod pallet {
 	/// Analogous to length of review map
 	#[pallet::storage]
 	pub type ReviewIndex<T: Config> = StorageValue<_, ReviewID>;
-	// The pallet's runtime storage items.
-	// https://substrate.dev/docs/en/knowledgebase/runtime/storage
-	#[pallet::storage]
-	#[pallet::getter(fn something)]
-	// Learn more about declaring storage items:
-	// https://substrate.dev/docs/en/knowledgebase/runtime/storage#declaring-storage-items
-	pub type Something<T> = StorageValue<_, u32>;
-
 	// Pallets use events to inform users when important changes are made.
 	// https://substrate.dev/docs/en/knowledgebase/runtime/events
 	#[pallet::event]
@@ -180,6 +179,7 @@ pub mod pallet {
 		/// Minted [amount]
 		Minted(BalanceOf<T>),
 	}
+	// ----^edit
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
@@ -192,48 +192,13 @@ pub mod pallet {
 		StorageOverflow,
 		/// Project owners cannot review their projects
 		OwnerReviewedProject,
+		/// Insufficient funds for rewarding reviewers Do seek a bounty from the treasury. 
+		InsufficientBalance,
 	}
-
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
+	// ----------------------------- ^edit
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// An example dispatchable that takes a singles value as a parameter, writes the value to
-		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
-		pub fn do_something(origin: OriginFor<T>, something: u32) -> DispatchResult {
-			// Check that the extrinsic was signed and get the signer.
-			// This function will return an error if the extrinsic is not signed.
-			// https://substrate.dev/docs/en/knowledgebase/runtime/origin
-			let who = ensure_signed(origin)?;
-
-			// Update storage.
-			<Something<T>>::put(something);
-
-			// Emit an event.
-			Self::deposit_event(Event::SomethingStored(something, who));
-			// Return a successful DispatchResultWithPostInfo
-			Ok(())
-		}
-		/// An example dispatchable that may throw a custom error.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
-			let _who = ensure_signed(origin)?;
-
-			// Read a value from storage.
-			match <Something<T>>::get() {
-				// Return an error if the value has not been set.
-				None => Err(Error::<T>::NoneValue)?,
-				Some(old) => {
-					// Increment the value read from storage; will error in the event of overflow.
-					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-					// Update the value in storage with the incremented result.
-					<Something<T>>::put(new);
-					Ok(())
-				}
-			}
-		}
 		/// Create a project
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,3))]
 		pub fn create_project(origin: OriginFor<T>, project_meta: Vec<u8>) -> DispatchResult {
@@ -241,17 +206,23 @@ pub mod pallet {
 			// CHECKS
 			let n_index = <ProjectIndex<T>>::get().unwrap_or_default();
 			let new = n_index.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-			// STORAGE MUTATIONS
-			<Projects<T>>::insert(
-				n_index.clone(),
-				Project {
+			// check if project already exists from userIO. if so, Err(you already have one!).
+			
+			// if balance available, reserve reward, else direct to treasury for bounty.
+			let mut project = Project {
 					owner_id: who.clone(),
 					reviewers: Option::None,
 					reviews: Option::None,
 					badge: Option::None,
 					metadata: project_meta.clone(),
 					proposal_status: Default::default(),
-				},
+					reward: Default::default()
+				};
+			ProjectIO::<T>::reserve_reward(&mut project)?;	
+			// STORAGE MUTATIONS
+			<Projects<T>>::insert(
+				n_index.clone(),
+				project
 			);
 			<ProjectIndex<T>>::put(new);
 			Self::deposit_event(Event::ProjectCreated(who, project_meta));
@@ -302,14 +273,34 @@ pub mod pallet {
 			// call its ensure origin
 			let _who = T::ApprovedOrigin::ensure_origin(origin)?;
 			// then check subsume our balance - ToDo
-
+			
 			Self::deposit_event(Event::Minted(x.clone()));
 			Ok(())
 		}
+
 	}
-	/// A separate impl pallet<T> for custom functions external to callables
+	/// A trait that allows project to:
+	/// - reserve some token for rewarding its reviewers.
+	pub trait ProjectIO<T:Config>{
+		fn can_reward(&self)->bool;
+		fn reserve_reward(&mut self) -> DispatchResult;
+	}
+	impl<T:Config> ProjectIO<T> for ProjectAl<T>{
+		fn can_reward(&self)->bool{
+			T::Currency::can_reserve(&self.owner_id, T::RewardCap::get())
+		}
+		fn reserve_reward(&mut self) -> DispatchResult{
+			ensure!(ProjectIO::<T>::can_reward(self),Error::<T>::InsufficientBalance);
+			T::Currency::reserve(&self.owner_id, T::RewardCap::get())?;
+			self.reward = T::RewardCap::get();
+			Ok(())
+		}
+	}
+	
+	/// A separate impl pallet<T> for custom functions that aren't extrinsics
 	impl<T: Config> Pallet<T> {
-		/// Create a project from required data
+		
+		/// Create a project from required data - only for genesis
 		pub fn initialize_projects(
 			this_owner_id: T::AccountId,
 			this_meta: Vec<u8>,
@@ -318,14 +309,25 @@ pub mod pallet {
 			this_status: Status,
 			this_reason: Reason,
 		) -> ProjectAl<T> {
-			let returnable = Project {
-				owner_id: this_owner_id,
+			let mut returnable = Project {
+				owner_id: this_owner_id.clone(),
 				reviewers: Option::Some(this_reviewers),
 				reviews: Option::Some(this_revs),
 				badge: Option::None,
 				metadata: this_meta,
 				proposal_status: ProposalStatus { status: this_status, reason: this_reason },
+				reward: Default::default(),
 			};
+			let res= ProjectIO::<T>::reserve_reward(&mut returnable);
+			if !res.is_ok(){
+				// temporary hack to ensure we have enough. Figure out a way of directly issuing from the treasury without spend some funds and co. for this genesis. And give the treasury some funds!
+                let imbalance =T::Currency::issue( T::RewardCap::get());
+                let imbalance2 =T::Currency::issue( T::RewardCap::get());
+
+				T::Currency::resolve_creating(&this_owner_id, imbalance);
+				T::Currency::resolve_creating(&this_owner_id, imbalance2);
+				let _= ProjectIO::<T>::reserve_reward(&mut returnable);
+			}
 
 			returnable
 		}
