@@ -1,18 +1,13 @@
 [package]
-authors = ['Kresna SHA888 <https://github.com/SHA888>']
-description = 'Substrate FRAME chocolate pallet for defining custom runtime logic.'
-edition = '2018'
-homepage = ''
-license = 'Unlicense'
-name = 'pallet-chocolate'
-publish = false
-repository = 'https://github.com/Chocolate-Project/chocolate-node'
-version = '0.1.0'
-readme = 'README.md'
+name = "chocolate-projects"
+version = "0.1.0"
+edition = "2021"
+description = "Primitives crate for chocolate projects"
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
-
+# ----------------_ dup
 [dev-dependencies.serde]
 version = '1.0.126'
 
@@ -78,29 +73,16 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
-# added pallets
+# added pallets - duplicate with dev serde
 [dependencies.serde]
 version = "1.0.126"
 optional = true
 features = ['derive']
 # # added dep
-[dependencies.chocolate-users]
-path = '../../primitives/chocolate-users'
-default-features = false
-version = '0.1.0'
-# # added dep
-[dependencies.chocolate-projects]
-path = '../../primitives/chocolate-projects'
-default-features = false
-version = '0.1.0'
-# # added dep - is this tight coupling??
-[dependencies.pallet-users]
-default-features = false
-path = '../users'
-version = '0.1.0'
 
 [features]
 default = ['std']
+# or here?
 runtime-benchmarks = ['frame-benchmarking']
 std = [
     'serde',
@@ -111,9 +93,5 @@ std = [
     'pallet-treasury/std',
     'pallet-balances/std',
     'frame-benchmarking/std',
-    # added
-    'chocolate-users/std',
-    'chocolate-projects/std',
-    'pallet-users/std',
 ]
 try-runtime = ['frame-support/try-runtime']

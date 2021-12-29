@@ -20,6 +20,8 @@ pub mod constants;
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::constants;
+	use chocolate_projects::*;
+	use chocolate_users::UserIO;
 	use frame_support::{
 		dispatch::DispatchResult,
 		pallet_prelude::*,
@@ -43,107 +45,24 @@ pub mod pallet {
 		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
 		/// * Treasury outlet: A type with bounds to move slashed funds to the treasury.
 		type TreasuryOutlet: OnUnbalanced<NegativeImbalanceOf<Self>>;
+		/// This is it! The user pallet. A type with bounds to access the user module.
+		type UsersOutlet: UserIO<Self>;
 		/// * Reward Cap: Max reward projects can place on themselves
 		#[pallet::constant]
 		type RewardCap: Get<BalanceOf<Self>>;
 	}
-	pub type NegativeImbalanceOf<T> =
-		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
-	/// type alias for text
-	pub type TextAl = Vec<u8>;
-	/// A simple u32
-	pub type ProjectID = u32;
-	/// Index for reviews , use to link to project
-	pub type ReviewID = u64;
+	pub type NegativeImbalanceOf<T> = <<T as Config>::Currency as Currency<
+		<T as frame_system::Config>::AccountId,
+	>>::NegativeImbalance;
+
 	/// type alias for review - this is the base struct, like the 2nd part of Balancesof
 	pub type ReviewAl<T> = Review<<T as frame_system::Config>::AccountId>;
 	/// type alias for project
-	pub type ProjectAl<T> = Project<<T as frame_system::Config>::AccountId,BalanceOf<T>>;
+	pub type ProjectAl<T> = Project<<T as frame_system::Config>::AccountId, BalanceOf<T>>;
 	/// Type alias for balance, binding T::Currency to Currency::AccountId and then extracting from that Balance. Accessible via T::BalanceOf. T is frame_System.
 	type BalanceOf<T> =
 		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-	use codec::{Decode, Encode};
-	#[derive(Encode, Decode, Default, Clone, PartialEq)]
-	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct Review<UserID> {
-		proposal_status: ProposalStatus,
-		user_id: UserID,
-		content: Vec<u8>,
-		project_id: ProjectID,
-	}
-
-	/// The metadata of a project.
-	type MetaData = Vec<u8>;
-
-	#[cfg(feature = "std")]
-	pub use serde::{Deserialize, Serialize};
-
-	/// The status of the proposal
-	#[derive(Encode, Decode, Clone, PartialEq)]
-	#[cfg_attr(feature = "std", derive(Debug))]
-	#[cfg_attr(feature = "std", derive(Deserialize, Serialize))]
-	pub enum Status {
-		///Proposal created
-		Proposed,
-		/// Proposal accepted
-		Accepted,
-		/// Proposal rejected
-		Rejected,
-	}
-	/// Reason for the current status - Required for rejected proposal.
-	#[derive(Encode, Decode, Clone, PartialEq)]
-	#[cfg_attr(feature = "std", derive(Debug))]
-	#[cfg_attr(feature = "std", derive(Deserialize, Serialize))]
-	pub enum Reason {
-		/// Custom reason to encapsulate further things like marketCap and other details
-		Other(Vec<u8>),
-		/// Negative lenient - base conditions for project missing or review lacking detail
-		InsufficientMetaData,
-		/// Negative harsh, project or review is malicious
-		Malicious,
-		/// Positive neutral, covers rank up to accepted.
-		PassedRequirements,
-	}
-	/// The status of a proposal sent to the council from here.
-	#[derive(Encode, Decode, Default, Clone, PartialEq)]
-	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct ProposalStatus {
-		status: Status,
-		reason: Reason,
-	}
-	/// Default status - storage req
-	impl Default for Status {
-		fn default() -> Self {
-			Status::Proposed
-		}
-	}
-	/// Default reason - storage req
-	impl Default for Reason {
-		fn default() -> Self {
-			Reason::PassedRequirements
-		}
-	}
-	/// The project structure.
-	#[derive(Encode, Decode, Default, Clone, PartialEq)]
-	#[cfg_attr(feature = "std", derive(Debug))]
-	pub struct Project<UserID,Balance> {
-		/// The owner of the project
-		owner_id: UserID,
-		/// A list of the project's reviewers for validation
-		reviewers: Option<Vec<UserID>>,
-		/// A list of the project's reviews - Vec
-		reviews: Option<Vec<ReviewID>>,
-		/// A bool that allows for simple allocation of the unique chocolate badge. NFT??
-		badge: Option<bool>,
-		/// Project metadata
-		metadata: MetaData,
-		/// the status of the project's proposal in the council.
-		proposal_status: ProposalStatus,
-		/// A reward value for the project
-		reward: Balance,
-	}
-// ------------------------------------------------------------^edit
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
@@ -192,7 +111,7 @@ pub mod pallet {
 		StorageOverflow,
 		/// Project owners cannot review their projects
 		OwnerReviewedProject,
-		/// Insufficient funds for rewarding reviewers Do seek a bounty from the treasury. 
+		/// Insufficient funds for rewarding reviewers Do seek a bounty from the treasury.
 		InsufficientBalance,
 	}
 	// ----------------------------- ^edit
@@ -207,23 +126,21 @@ pub mod pallet {
 			let n_index = <ProjectIndex<T>>::get().unwrap_or_default();
 			let new = n_index.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
 			// check if project already exists from userIO. if so, Err(you already have one!).
-			
+
 			// if balance available, reserve reward, else direct to treasury for bounty.
-			let mut project = Project {
-					owner_id: who.clone(),
-					reviewers: Option::None,
-					reviews: Option::None,
-					badge: Option::None,
-					metadata: project_meta.clone(),
-					proposal_status: Default::default(),
-					reward: Default::default()
-				};
-			ProjectIO::<T>::reserve_reward(&mut project)?;	
-			// STORAGE MUTATIONS
-			<Projects<T>>::insert(
-				n_index.clone(),
-				project
+			let mut project = ProjectAl::<T>::new(
+				who.clone(),
+				Option::None,
+				Option::None,
+				Option::None,
+				project_meta.clone(),
+				Default::default(),
+				Default::default(),
 			);
+
+			Pallet::<T>::reserve_reward(&mut project)?;
+			// STORAGE MUTATIONS
+			<Projects<T>>::insert(n_index.clone(), project);
 			<ProjectIndex<T>>::put(new);
 			Self::deposit_event(Event::ProjectCreated(who, project_meta));
 			Ok(())
@@ -246,7 +163,7 @@ pub mod pallet {
 			ensure!(!list_of_reviewers.contains(&who), Error::<T>::DuplicateReview);
 			ensure!(this_project.owner_id.ne(&who), Error::<T>::OwnerReviewedProject);
 			// MUTATIONS
-			// neither account ids nor the index should exceed max isize
+			// expect(neither account ids nor the index should exceed max isize)
 			list_of_reviewers.push(who.clone());
 			list_of_reviews.push(n_index.clone());
 			// STORAGE MUTATIONS
@@ -272,34 +189,35 @@ pub mod pallet {
 		pub fn mint(origin: OriginFor<T>, x: BalanceOf<T>) -> DispatchResult {
 			// call its ensure origin
 			let _who = T::ApprovedOrigin::ensure_origin(origin)?;
-			// then check subsume our balance - ToDo
-			
-			Self::deposit_event(Event::Minted(x.clone()));
+			let imbalance = T::Currency::issue(x);
+			let minted = imbalance.peek();
+			Self::do_mint(imbalance);
+			Self::deposit_event(Event::Minted(minted));
 			Ok(())
 		}
+	}
 
-	}
-	/// A trait that allows project to:
-	/// - reserve some token for rewarding its reviewers.
-	pub trait ProjectIO<T:Config>{
-		fn can_reward(&self)->bool;
-		fn reserve_reward(&mut self) -> DispatchResult;
-	}
-	impl<T:Config> ProjectIO<T> for ProjectAl<T>{
-		fn can_reward(&self)->bool{
-			T::Currency::can_reserve(&self.owner_id, T::RewardCap::get())
+	impl<T: Config> ProjectIO<T> for Pallet<T> {
+		type UserID = T::AccountId;
+		type Balance = BalanceOf<T>;
+		fn can_reward(project_struct: &ProjectAl<T>) -> bool {
+			T::Currency::can_reserve(&project_struct.owner_id, T::RewardCap::get())
 		}
-		fn reserve_reward(&mut self) -> DispatchResult{
-			ensure!(ProjectIO::<T>::can_reward(self),Error::<T>::InsufficientBalance);
-			T::Currency::reserve(&self.owner_id, T::RewardCap::get())?;
-			self.reward = T::RewardCap::get();
+		fn reserve_reward(project_struct: &mut ProjectAl<T>) -> DispatchResult {
+			ensure!(Pallet::<T>::can_reward(&project_struct), Error::<T>::InsufficientBalance);
+			T::Currency::reserve(&project_struct.owner_id, T::RewardCap::get())?;
+			project_struct.reward = T::RewardCap::get();
 			Ok(())
 		}
 	}
-	
+
 	/// A separate impl pallet<T> for custom functions that aren't extrinsics
 	impl<T: Config> Pallet<T> {
-		
+		/// Function to take negative imbalance to the treasury, expected to be called after creating one e.g through T::Currency::issue()
+		pub fn do_mint(amount: NegativeImbalanceOf<T>) {
+			T::TreasuryOutlet::on_unbalanced(amount);
+		}
+
 		/// Create a project from required data - only for genesis
 		pub fn initialize_projects(
 			this_owner_id: T::AccountId,
@@ -309,24 +227,24 @@ pub mod pallet {
 			this_status: Status,
 			this_reason: Reason,
 		) -> ProjectAl<T> {
-			let mut returnable = Project {
-				owner_id: this_owner_id.clone(),
-				reviewers: Option::Some(this_reviewers),
-				reviews: Option::Some(this_revs),
-				badge: Option::None,
-				metadata: this_meta,
-				proposal_status: ProposalStatus { status: this_status, reason: this_reason },
-				reward: Default::default(),
-			};
-			let res= ProjectIO::<T>::reserve_reward(&mut returnable);
-			if !res.is_ok(){
+			let mut returnable = ProjectAl::<T>::new(
+				this_owner_id.clone(),
+				Option::Some(this_reviewers),
+				Option::Some(this_revs),
+				Option::None,
+				this_meta,
+				ProposalStatus { status: this_status, reason: this_reason },
+				Default::default(),
+			);
+			let res = Pallet::<T>::reserve_reward(&mut returnable);
+			if !res.is_ok() {
 				// temporary hack to ensure we have enough. Figure out a way of directly issuing from the treasury without spend some funds and co. for this genesis. And give the treasury some funds!
-                let imbalance =T::Currency::issue( T::RewardCap::get());
-                let imbalance2 =T::Currency::issue( T::RewardCap::get());
+				let imbalance = T::Currency::issue(T::RewardCap::get());
+				let imbalance2 = T::Currency::issue(T::RewardCap::get());
 
 				T::Currency::resolve_creating(&this_owner_id, imbalance);
 				T::Currency::resolve_creating(&this_owner_id, imbalance2);
-				let _= ProjectIO::<T>::reserve_reward(&mut returnable);
+				let _ = Pallet::<T>::reserve_reward(&mut returnable);
 			}
 
 			returnable
@@ -412,6 +330,9 @@ pub mod pallet {
 				count += 1;
 				<ProjectIndex<T>>::put(count);
 			}
+			// Fill the treasury - A little hack.
+			let imbalance = T::Currency::issue(T::RewardCap::get());
+			Pallet::<T>::do_mint(imbalance);
 		}
 	}
 }

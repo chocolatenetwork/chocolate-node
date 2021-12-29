@@ -769,6 +769,8 @@ dependencies = [
 name = "chocolate"
 version = "0.1.0"
 dependencies = [
+ "chocolate-node-constants",
+ "chocolate-projects",
  "chocolate-runtime",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -804,9 +806,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "chocolate-node-constants"
+version = "0.1.1"
+dependencies = [
+ "frame-system",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
+name = "chocolate-projects"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-treasury",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "chocolate-runtime"
 version = "3.0.0-monthly-2021-08"
 dependencies = [
+ "chocolate-node-constants",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -842,6 +872,21 @@ dependencies = [
  "sp-version",
  "static_assertions",
  "substrate-wasm-builder",
+]
+
+[[package]]
+name = "chocolate-users"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -3919,11 +3964,14 @@ dependencies = [
 name = "pallet-chocolate"
 version = "0.1.0"
 dependencies = [
+ "chocolate-projects",
+ "chocolate-users",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-treasury",
+ "pallet-users",
  "parity-scale-codec",
  "serde",
  "sp-core",
@@ -4115,6 +4163,7 @@ dependencies = [
 name = "pallet-users"
 version = "0.1.0"
 dependencies = [
+ "chocolate-users",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

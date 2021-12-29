@@ -24,6 +24,10 @@ version = '3.0.0'
 path = '../runtime'
 version = '3.0.0-monthly-2021-08'
 
+[dependencies.chocolate-node-constants]
+path = '../primitives/chocolate-node-constants'
+version = '0.1.1'
+
 [dependencies]
 jsonrpc-core = '15.1.0'
 structopt = '0.3.8'
@@ -170,6 +174,10 @@ version = '4.0.0-dev'
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
+# added dep
+[dependencies.chocolate-projects]
+path = '../primitives/chocolate-projects'
+version = '0.1.0'
 
 [features]
 default = []
