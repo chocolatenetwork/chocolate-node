@@ -31,7 +31,7 @@ pub mod pallet {
 		},
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_runtime::ArithmeticError;
+	use sp_runtime::{traits::CheckedDiv, ArithmeticError};
 	use sp_std::str;
 	use sp_std::vec::Vec;
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
@@ -133,6 +133,8 @@ pub mod pallet {
 		ReviewNotFound,
 		/// The call to accept must be on a proposed review with appropriate state
 		AcceptingNotProposed,
+		/// The checked division method failed, either due to overflow/underflow or because of division by zero.
+		CheckedDivisionFailed,
 	}
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
@@ -351,18 +353,15 @@ pub mod pallet {
 		) -> DispatchResult {
 			let reward = project.reward.clone();
 			// Reward calc
-			// reward is reward * (user_point/ttl_project_point )-- use fixed point.
-			// As it stands, == 0  due to integer division.
-			let point_ratio = {
-				let r = review.point_snapshot.checked_div(project.total_user_scores);
-				if let Some(r) = r {
-					r
-				} else {
-					return Err(DispatchError::Arithmetic(ArithmeticError::DivisionByZero));
-				}
-			};
+			// reward is reward * (user_point/ttl_project_point )-- use fixed point attr of BalanceOf and move vars around in eqn.
 
-			let reward_fraction = reward.saturating_mul(point_ratio.into());
+			let balance_prj_score = BalanceOf::<T>::from(project.total_user_scores);
+			let balance_rev_sshot = BalanceOf::<T>::from(review.point_snapshot);
+			let balance_div = reward
+				.checked_div(&balance_prj_score)
+				.ok_or(DispatchError::Arithmetic(ArithmeticError::DivisionByZero))?;
+
+			let reward_fraction = balance_div.saturating_mul(balance_rev_sshot);
 			// Unreserve our final decision from project.
 			// We expect projects to not edit this reserve. What if they do?? - Users tx start failing: Ask users to Report! if found, and track txs
 
