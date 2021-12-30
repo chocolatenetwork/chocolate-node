@@ -3,7 +3,7 @@
 use super::*;
 #[allow(unused)]
 use crate::Pallet as Chocolate;
-use chocolate_users::Review;
+use chocolate_projects::Review;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, whitelisted_caller};
 use frame_support::traits::{Currency, ExistenceRequirement, Get};
 use frame_system::RawOrigin;
@@ -23,7 +23,7 @@ benchmarks! { // comment for now, do_something is gone, but it's legacy remains
 		let price = T::Currency::minimum_balance();
 		let collat = T::UserCollateral::get();
 		let imb =  T::Currency::issue(collat);
-		let _ = T::Currency::make_free_balance_be(&caller, imb);
+		let _ = T::Currency::make_free_balance_be(&caller, imb.peek());
 	}: create_review(RawOrigin::Signed(caller), s,prj_id)
 	// verify {
 	// 	assert_eq!(Reviews::<T>::get(1), Some(rev));
