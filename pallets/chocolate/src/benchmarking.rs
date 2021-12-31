@@ -5,7 +5,7 @@ use super::*;
 use crate::Pallet as Chocolate;
 use chocolate_projects::Review;
 use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, whitelisted_caller};
-use frame_support::traits::{Currency, ExistenceRequirement, Get};
+use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, OnUnbalanced};
 use frame_system::RawOrigin;
 // calls do_something multiple times 0..100 inputs verifying it got stored each time
 benchmarks! { // comment for now, do_something is gone, but it's legacy remains
