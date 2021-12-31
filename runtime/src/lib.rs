@@ -308,6 +308,7 @@ impl pallet_sudo::Config for Runtime {
 
 parameter_types! {
 	pub const RewardCap: Balance = 50 * HECTOCHOC;
+	pub const UserCollateral: Balance = 10 * HECTOCHOC;
 }
 /// Configure the pallet-chocolate in pallets/chocolate.
 impl pallet_chocolate::Config for Runtime {
@@ -321,6 +322,7 @@ impl pallet_chocolate::Config for Runtime {
 	type TreasuryOutlet = Treasury;
 	type RewardCap = RewardCap;
 	type UsersOutlet = UsersModule;
+	type UserCollateral = UserCollateral;
 }
 /// Configure the pallet-users in pallets/users.
 impl pallet_users::Config for Runtime {

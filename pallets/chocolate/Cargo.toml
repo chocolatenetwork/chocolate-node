@@ -12,9 +12,11 @@ readme = 'README.md'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
-
-[dev-dependencies.serde]
-version = '1.0.126'
+# added dep
+[dependencies.serde]
+version = "1.0.126"
+optional = true
+features = ['derive']
 
 [dev-dependencies.sp-core]
 default-features = false
@@ -28,7 +30,7 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
 
-[dev-dependencies.sp-runtime]
+[dependencies.sp-runtime]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
@@ -78,11 +80,7 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
-# added pallets
-[dependencies.serde]
-version = "1.0.126"
-optional = true
-features = ['derive']
+
 # # added dep
 [dependencies.chocolate-users]
 path = '../../primitives/chocolate-users'
