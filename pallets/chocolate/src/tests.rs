@@ -27,17 +27,24 @@ fn create_project_should_work() {
 	});
 }
 
-// #[test]
-// fn create_project_should_fail() {
-// 	new_test_ext().execute_with(|| {
-// 		assert_ok!(ChocolateModule::create_project(Origin::none(), [40_u8].to_vec()));
-// 	})
-// }
+#[test]
+fn create_project_should_fail() {
+	new_test_ext().execute_with(|| {
+		assert_ok!(ChocolateModule::create_project(Origin::signed(1), [40_u8].to_vec()));
+	})
+}
 
 // #[test]
 // fn create_review_should_work() {
 // 	new_test_ext().execute_with(|| {
 // 		// Dispatch a signed extrinsic.
-// 		assert_ok!(ChocolateModule::create_project(Origin::signed(1), [42_u8].to_vec()));
+// 		assert_ok!(ChocolateModule::create_review(Origin::signed(1), [42_u8].to_vec(), 42_u32));
+// 	});
+// }
+
+// fn create_review_should_fail() {
+// 	new_test_ext().execute_with(|| {
+// 		// Dispatch a signed extrinsic.
+// 		assert_ok!(ChocolateModule::create_review(Origin::signed(1), [40_u8].to_vec(), 42_u32));
 // 	});
 // }
