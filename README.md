@@ -5,7 +5,7 @@
 <div align="Center">
 <h1> Chocolate Node</h1>
 <h2> Decentralized Blockchain Verification Platform </h2>
-To eliminate scams in blockchain ecosystem using user-authentic reviews and auditing.  
+Ending scam & spam in crypto once and for all.  
 <br>
 Built on Substrate.
 

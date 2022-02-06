@@ -29,8 +29,7 @@ pub mod pallet {
 		},
 	};
 	use frame_system::pallet_prelude::*;
-	use sp_std::str;
-	use sp_std::vec::Vec;
+	use sp_std::{str, vec::Vec};
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -79,7 +78,7 @@ pub mod pallet {
 	#[cfg_attr(feature = "std", derive(Debug))]
 	#[cfg_attr(feature = "std", derive(Deserialize, Serialize))]
 	pub enum Status {
-		///Proposal created
+		/// Proposal created
 		Proposed,
 		/// Proposal accepted
 		Accepted,
@@ -231,7 +230,7 @@ pub mod pallet {
 					// Update the value in storage with the incremented result.
 					<Something<T>>::put(new);
 					Ok(())
-				}
+				},
 			}
 		}
 		/// Create a project
@@ -357,7 +356,7 @@ pub mod pallet {
 				n_index += 1;
 			}
 			<ReviewIndex<T>>::put(n_index);
-			return list_of_indexes;
+			return list_of_indexes
 		}
 	}
 	/// Genesis config for the chocolate pallet
