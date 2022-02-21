@@ -1,5 +1,5 @@
 [package]
-authors = ['Kresna SHA888 <https://github.com/SHA888>']
+authors = ['Team Chocolate']
 description = 'Substrate FRAME users pallet for defining custom runtime logic.'
 edition = '2018'
 homepage = ''

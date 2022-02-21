@@ -1,5 +1,5 @@
 [package]
-authors = ['Kresna SHA888 <https://github.com/SHA888>']
+authors = ['Team Chocolate']
 description = 'Substrate FRAME for composing and building WASM runtimes.'
 edition = '2018'
 homepage = ''

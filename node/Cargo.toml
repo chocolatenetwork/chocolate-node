@@ -1,5 +1,5 @@
 [package]
-authors = ['Kresna SHA888 <https://github.com/SHA888>']
+authors = ['Team Chocolate']
 description = 'A FRAME-based Chocolate Substrate node, ready for hackathon.'
 edition = '2018'
 homepage = ''
