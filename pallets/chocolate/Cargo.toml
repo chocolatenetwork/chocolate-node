@@ -1,7 +1,7 @@
 [package]
 authors = ['Team Chocolate']
 description = 'Substrate FRAME chocolate pallet for defining custom runtime logic.'
-edition = '2018'
+edition = '2021'
 homepage = ''
 license = 'Unlicense'
 name = 'pallet-chocolate'

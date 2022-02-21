@@ -1,7 +1,7 @@
 [package]
 authors = ['Team Chocolate']
 description = 'Substrate FRAME for composing and building WASM runtimes.'
-edition = '2018'
+edition = '2021'
 homepage = ''
 license = 'Unlicense'
 name = 'chocolate-runtime'

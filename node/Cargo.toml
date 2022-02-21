@@ -1,7 +1,7 @@
 [package]
 authors = ['Team Chocolate']
 description = 'A FRAME-based Chocolate Substrate node, ready for hackathon.'
-edition = '2018'
+edition = '2021'
 homepage = ''
 license = 'Unlicense'
 name = 'chocolate'
