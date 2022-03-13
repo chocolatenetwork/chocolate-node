@@ -33,8 +33,8 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::event]
-	#[pallet::metadata(T::AccountId = "AccountId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	#[pallet::metadata(T::AccountId = "AccountId")]
 	pub enum Event<T: Config> {
 		SomethingStored(u32, T::AccountId),
 		UserCreated(T::AccountId),
@@ -95,14 +95,14 @@ pub mod pallet {
 		/// Infallible. Simple inserts to storage. Your responsibility to ensure it doesn't already exist.
 		fn set_user(id: &T::AccountId, user: User) -> DispatchResult {
 			if Self::check_user_exists(id) {
-				return Err(Error::<T>::UserAlreadyExists.into()); // Should it err instead??
+				return Err(Error::<T>::UserAlreadyExists.into()) // Should it err instead??
 			}
 			<Users<T>>::insert(id, user);
 			Ok(())
 		}
 		fn update_user(id: &T::AccountId, user: User) -> DispatchResult {
 			if !Self::check_user_exists(id) {
-				return Err(DispatchError::CannotLookup);
+				return Err(DispatchError::CannotLookup)
 			};
 			<Users<T>>::mutate(id, |u| *u = Some(user));
 			Ok(())

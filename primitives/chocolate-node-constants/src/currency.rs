@@ -15,7 +15,7 @@ use crate::Balance;
 ///
 ///
 /// The balance type is general as used in our chain i.e based on 10^-12. Or pico.
-pub const PICOCHOC: Balance = 1; //10^-12
+pub const PICOCHOC: Balance = 1; // 10^-12
 /// 10^9
 pub const MILLICHOC: Balance = 1_000_000_000 * PICOCHOC; // Equiv to 10^(-12+9) or milli
 /// 10^12

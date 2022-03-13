@@ -7,12 +7,10 @@ fn it_works_for_default_value() {
 		// dispatch our test call
 
 		// check that the stored value is correct
-
 	});
 }
 
 #[test]
 fn correct_error_for_none_value() {
-	new_test_ext().execute_with(|| {
-	});
+	new_test_ext().execute_with(|| {});
 }

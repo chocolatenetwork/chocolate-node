@@ -32,8 +32,7 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use sp_runtime::{traits::CheckedDiv, ArithmeticError};
-	use sp_std::str;
-	use sp_std::vec::Vec;
+	use sp_std::{str, vec::Vec};
 	// Include the ApprovedOrigin type here, and the method to get treasury id, then mint with currencymodule
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -207,7 +206,6 @@ pub mod pallet {
 		///
 		/// **Call requirements**:
 		/// - Origin must be cacao
-		///
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,3))]
 		pub fn accept_review(
 			origin: OriginFor<T>,
@@ -302,7 +300,7 @@ pub mod pallet {
 		/// is the final reward calculated.
 		/// * **Does no checks**. Assumes specific state of review and project . i.e default Proposed and Accepted states respectively.
 		/// * Since unreserve doesn't have an expect block, if there is remaining balance, we assume error and rollback
-		///	 # Panics!
+		/// 	 # Panics!
 		///  with expect if we can't rollback, and returns dispatch error for inconsistent reward.
 		/// **Requires** : check_reward , check_collateral, (caller) reward_user (In context of accept reward)
 		fn reward(project_struct: &mut ProjectAl<T>, amount: Self::Balance) -> DispatchResult {
@@ -316,7 +314,7 @@ pub mod pallet {
 					amount.saturating_sub(_missing_reward),
 				)
 				.expect("Should be enough to rollback following our initial unreserve");
-				return Err(Error::<T>::RewardInconsistent.into());
+				return Err(Error::<T>::RewardInconsistent.into())
 			}
 			// Update the reward on project.
 			project_struct.reward = project_struct.reward.saturating_sub(amount);

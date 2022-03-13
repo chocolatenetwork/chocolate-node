@@ -6,8 +6,7 @@
 pub mod currency;
 /// Module of constants describing the units of time used on-chain for ease.
 pub mod time;
-pub use crate::currency::*;
-pub use crate::time::*;
+pub use crate::{currency::*, time::*};
 
 /// Balance of an account.
 pub type Balance = u128;

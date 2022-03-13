@@ -31,7 +31,7 @@ pub use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "std", derive(Debug))]
 #[cfg_attr(feature = "std", derive(Deserialize, Serialize))]
 pub enum Status {
-	///Proposal created
+	/// Proposal created
 	Proposed,
 	/// Proposal accepted
 	Accepted,
