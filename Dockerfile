@@ -1,10 +1,8 @@
 # If this works, use this in gh actions to generate image instead
-FROM paritytech/ci-linux:595b5691-20211221
+# FROM paritytech/ci-linux:595b5691-20211221
+FROM islami00/choc-test:t1
 
 WORKDIR /node
-
-COPY . .
-RUN cargo build --release
 
 EXPOSE 9944
 
