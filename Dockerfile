@@ -6,4 +6,4 @@ WORKDIR /node
 
 EXPOSE 9944
 
-# CMD ["./target/release/chocolate","--dev","--ws-external"]
+CMD ["./target/release/chocolate","--dev","--ws-external"]
