@@ -3,7 +3,7 @@ version: "3.9"
 services:
   dev:
     container_name: chocolate-node-dev
-    image: paritytech/ci-linux:ba887019-20210411
+    image: islami00/choc-test:t1
     working_dir: /var/www/chocolate
     ports:
       - "9944:9944"
@@ -11,7 +11,8 @@ services:
       - CARGO_HOME=/var/www/chocolate/.cargo
     volumes:
       - .:/var/www/chocolate
+      # This is the main volume we need to provision if dockerising
       - type: bind
         source: ./.local
         target: /root/.local
-    command: bash -c "cargo build --release && ./target/release/chocolate --dev --ws-external"
+    command: bash -c "cd /node && ./target/release/chocolate --dev --ws-external"
