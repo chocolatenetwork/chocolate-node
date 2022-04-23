@@ -149,10 +149,9 @@ pub mod pallet {
 			// CHECKS
 			let index = <NextProjectIndex<T>>::get().unwrap_or(1);
 			let new_index = index.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-			let mut user = T::UsersOutlet::get_or_create_default(&who).unwrap_or_default();
-			let user_project_id = user.project_id.unwrap_or_default();
-			// default for u32 is 0 but projectID starts at 1
-			ensure!(user_project_id == 0, Error::<T>::AlreadyOwnsProject);
+			let mut user = T::UsersOutlet::get_or_create_default(&who);
+			let not_own_project = user.project_id.is_none();
+			ensure!(not_own_project, Error::<T>::AlreadyOwnsProject);
 			ensure!(Pallet::<T>::can_reward(&who), Error::<T>::InsufficientBalance);
 			// Init structs.
 			let mut project = ProjectAl::<T>::new(who.clone(), project_meta.clone());
@@ -182,7 +181,7 @@ pub mod pallet {
 			let reserve = Pallet::<T>::can_collateralise(&who)?;
 			// Fallible MUTATIONS
 			Pallet::<T>::collateralise(&who, reserve)?;
-			let user = T::UsersOutlet::get_or_create_default(&who)?;
+			let user = T::UsersOutlet::get_or_create_default(&who);
 			this_project.total_user_scores =
 				this_project.total_user_scores.saturating_add(user.rank_points);
 			// STORAGE MUTATIONS
@@ -426,7 +425,6 @@ pub mod pallet {
 			project.proposal_status.reason = reason;
 			// STORAGE MUTATIONS
 			<Projects<T>>::insert(count, project.clone());
-			// <NextProjectIndex<T>>::put(count.saturating_add(1));
 			T::UsersOutlet::update_user(&who, user).expect("User should exist");
 			project
 		}
@@ -491,35 +489,41 @@ pub mod pallet {
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
 		/// Get the parameters for the init projects function
-		pub init_projects: Vec<(T::AccountId, Status, Reason)>,
+		pub init_projects: Vec<(Status, Reason)>,
+		pub init_users: Vec<T::AccountId>,
 	}
 	/// By default a generic project or known projects will be shown - polkadot & sisters
 	#[cfg(feature = "std")]
 	impl<T: Config> Default for GenesisConfig<T> {
 		fn default() -> Self {
 			// to-do actually make this known projects. In the meantime, default will do.
-			Self { init_projects: Vec::new() }
+			Self { init_projects: Vec::new(), init_users: Vec::new() }
 		}
 	}
 
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
+			// Create users.
+			let iter_users = (&self.init_users).iter();
+			for id in iter_users.clone() {
+				T::UsersOutlet::set_user(id, Default::default());
+			};
 			// setup a counter to serve as project index
 			let mut count: ProjectID = 1;
 			let meta: Vec<Vec<u8>> =
 				constants::project::METADATA.iter().map(|each| each.to_vec()).collect();
-			let zipped = (&self.init_projects).into_iter().zip(meta.iter());
+			let init_projects_w_users: Vec<_> = (&self.init_projects).into_iter().zip(iter_users).map(|((s,r),accnt)|(accnt,s.clone(),r.clone())).collect();
+			let zipped = (init_projects_w_users).into_iter().zip(meta.iter());
 			// create project from associated metadata in zip.
 			for each in zipped {
-				let (this_project, meta_ref) = each;
+				let (project_ref, meta_ref) = each;
 				let meta_cid = meta_ref.to_owned();
-				let (acnt, stat, reas) = this_project.to_owned();
+				let (acnt, stat, reas) = project_ref.to_owned();
 				// Filter ids so generated reviews do not include project owner
-				let filtered_ids: Vec<_> = (&self.init_projects)
-					.into_iter()
-					.filter(|(id, ..)| acnt.ne(id))
-					.map(|long| long.0.clone())
+				let filtered_ids: Vec<_> = (&self.init_users).iter()
+					.filter(|id| acnt.ne(id))
+					.map(|long| long.clone())
 					.collect();
 				// Give filtered ids and main acnt enough funds to pay for reward.
 				//  (Hack). More formal ways should be decided upon.
@@ -535,14 +539,10 @@ pub mod pallet {
 				filtered_ids
 					.iter()
 					.for_each(|id| T::Currency::resolve_creating(id, T::Currency::issue(total)));
-				// create the users.
-				filtered_ids.iter().for_each(|id| {
-					T::UsersOutlet::get_or_create_default(&acnt).expect("Should complete");
-					T::UsersOutlet::get_or_create_default(id).expect("Should complete");
-				});
+
 				// create reviews and projects and store.
 				let mut returnable =
-					Pallet::<T>::initialize_project(acnt, meta_cid, stat, reas, count);
+					Pallet::<T>::initialize_project(acnt.clone(), meta_cid, stat, reas, count);
 				let _reviews: Vec<_> =
 					Pallet::<T>::initialize_reviews(filtered_ids, &mut returnable, count);
 				// STORAGE MUTATIONS -- after due to mut

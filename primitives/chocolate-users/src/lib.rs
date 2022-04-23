@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::dispatch::{ DispatchResult};
 use frame_system::Config;
 
 #[derive(Encode, Decode, Default, Clone)]
@@ -16,7 +16,7 @@ pub trait UserIO<T: Config> {
 	fn check_owns_project(id: &T::AccountId) -> bool;
 	fn check_user_exists(id: &T::AccountId) -> bool;
 	/// Checks if the user exists, else creates a new user with wanted defaults.
-	fn get_or_create_default(id: &T::AccountId) -> Result<User, DispatchError>;
-	fn set_user(id: &T::AccountId, user: User) -> DispatchResult;
+	fn get_or_create_default(id: &T::AccountId) -> User;
+	fn set_user(id: &T::AccountId, user: User) -> ();
 	fn update_user(id: &T::AccountId, user: User) -> DispatchResult;
 }
