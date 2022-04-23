@@ -1,6 +1,7 @@
 use crate as pallet_chocolate;
 use frame_support::parameter_types;
 use frame_system as system;
+use pallet_users;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
@@ -21,6 +22,7 @@ frame_support::construct_runtime!(
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
 		ChocolateModule: pallet_chocolate::{Pallet, Call, Storage, Event<T>},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
+		UsersModule: pallet_users::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -73,6 +75,17 @@ impl pallet_balances::Config for Test {
 	type AccountStore = System;
 	type WeightInfo = ();
 }
+// ToDo! temp treasury that has implements unbalanced which stores outer state that can be queried
+
+// This is a mock runtime hence we can't avoid importing users and other deps.
+/// Configure the pallet-users for UserIO trait
+impl pallet_users::Config for Test {
+	type Event = Event;
+}
+parameter_types! {
+	pub const Cap: u128 = 5 * 1;
+	pub const UserCollateral: u128 = 1_000_000_000; // Look  into importing constants crate.
+}
 // our configs start here
 impl pallet_chocolate::Config for Test {
 	type Event = Event;
@@ -80,8 +93,13 @@ impl pallet_chocolate::Config for Test {
 	type ApprovedOrigin = frame_system::EnsureRoot<u64>;
 	// this is simply a pointer to the true implementor,and creator of the currency trait...the balances pallet
 	type Currency = Balances;
+	type TreasuryOutlet = ();
+	type RewardCap = Cap;
+	type UsersOutlet = UsersModule;
+	type UserCollateral = UserCollateral;
 }
 
+// construct a test that mocks treasury runtime but prints imbalance value instead
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()

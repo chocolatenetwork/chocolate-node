@@ -769,6 +769,8 @@ dependencies = [
 name = "chocolate"
 version = "0.1.0"
 dependencies = [
+ "chocolate-node-constants",
+ "chocolate-projects",
  "chocolate-runtime",
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -804,9 +806,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "chocolate-node-constants"
+version = "0.1.1"
+dependencies = [
+ "frame-system",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
+name = "chocolate-projects"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-treasury",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "chocolate-runtime"
 version = "3.0.0-monthly-2021-08"
 dependencies = [
+ "chocolate-node-constants",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -842,6 +872,21 @@ dependencies = [
  "sp-version",
  "static_assertions",
  "substrate-wasm-builder",
+]
+
+[[package]]
+name = "chocolate-users"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -3919,11 +3964,14 @@ dependencies = [
 name = "pallet-chocolate"
 version = "0.1.0"
 dependencies = [
+ "chocolate-projects",
+ "chocolate-users",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-treasury",
+ "pallet-users",
  "parity-scale-codec",
  "serde",
  "sp-core",
@@ -4115,6 +4163,7 @@ dependencies = [
 name = "pallet-users"
 version = "0.1.0"
 dependencies = [
+ "chocolate-users",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -4163,9 +4212,9 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec"
-version = "2.2.0"
+version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8975095a2a03bbbdc70a74ab11a4f76a6d0b84680d87c68d722531b0ac28e8a9"
+checksum = "373b1a4c1338d9cd3d1fa53b3a11bdab5ab6bd80a20f7f7becd76953ae2be909"
 dependencies = [
  "arrayvec 0.7.1",
  "bitvec 0.20.4",
@@ -4177,9 +4226,9 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec-derive"
-version = "2.2.0"
+version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40dbbfef7f0a1143c5b06e0d76a6278e25dac0bc1af4be51a0fbb73f07e7ad09"
+checksum = "1557010476e0595c9b568d16dcfb81b93cdeb157612726f5170d31aa707bed27"
 dependencies = [
  "proc-macro-crate 1.0.0",
  "proc-macro2",

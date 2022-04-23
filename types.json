@@ -1,0 +1,44 @@
+{
+  "ProjectID": "u32",
+  "ReviewID": "u64",
+  "Balance": "u128",
+  "MetaData": "Text",
+  "BalanceOf": "Balance",
+  "ReviewAl": "Review",
+  "ProjectAl": "Project",
+  "User": {
+    "rank_points": "u32",
+    "project_id": "Option<u32>"
+  },
+  "Project": {
+    "ownerID": "AccountId",
+    "badge": "Option<bool>",
+    "metadata": "MetaData",
+    "proposalStatus": "ProposalStatus",
+    "reward": "Balance",
+    "totalUserScores": "u32"
+  },
+  "Review": {
+    "proposalStatus": "ProposalStatus",
+    "userID": "AccountId",
+    "content": "Text",
+    "projectID": "ProjectID",
+    "pointSnapshot": "u32"
+  },
+
+  "ProposalStatus": {
+    "status": "Status",
+    "reason": "Reason"
+  },
+  "Status": {
+    "_enum": ["Proposed", "Accepted", "Rejected"]
+  },
+  "Reason": {
+    "_enum": {
+      "Other": "Text",
+      "InsufficientMetaData": null,
+      "Malicious": null,
+      "PassedRequirements": null
+    }
+  }
+}

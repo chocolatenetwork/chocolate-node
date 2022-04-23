@@ -20,10 +20,9 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use chocolate_users::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use sp_std::vec::Vec;
-
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
@@ -42,19 +41,8 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// users store
+	/// users store
 	pub type Users<T: Config> = StorageMap<_, Blake2_128Concat, T::AccountId, User>;
-
-	use v1::User;
-	pub mod v1 {
-		use codec::{Decode, Encode};
-		use sp_std::vec::Vec;
-
-		#[derive(Encode, Decode, Default, Clone)]
-		pub struct User {
-			pub rank_points: u32,
-		}
-	}
 
 	#[pallet::error]
 	pub enum Error<T> {
@@ -69,17 +57,54 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		// use base weight then add on any additional operations
-		// strings are u8 arrays. utf-8
 		/// Signed transaction to create user
 		#[pallet::weight(0 + T::DbWeight::get().writes(1))]
 		pub fn make_user(origin: OriginFor<T>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 
 			ensure!(!Users::<T>::contains_key(&who), Error::<T>::UserAlreadyExists);
-			<Users<T>>::insert(&who, User { rank_points: 0 });
+			<Users<T>>::insert(&who, User { rank_points: 0, project_id: Option::None });
 
 			Self::deposit_event(Event::UserCreated(who));
 
+			Ok(())
+		}
+	}
+	impl<T: Config> UserIO<T> for Pallet<T> {
+		fn get_user_by_id(id: &T::AccountId) -> Option<User> {
+			self::Users::<T>::get(id)
+		}
+		fn check_owns_project(id: &T::AccountId) -> bool {
+			let user = self::Users::<T>::get(id).unwrap_or_default();
+			user.project_id.is_some()
+		}
+		/// Allows us to check if the user even exists before calling get by id.
+		fn check_user_exists(id: &T::AccountId) -> bool {
+			self::Users::<T>::contains_key(id)
+		}
+		fn get_or_create_default(id: &T::AccountId) -> Result<User, DispatchError> {
+			let user_exists = Self::check_user_exists(&id);
+			let mut user = Self::get_user_by_id(&id).unwrap_or_default();
+			if !user_exists {
+				user.rank_points = 1;
+				user.project_id = None;
+				self::Users::<T>::insert(&id, user.clone());
+			}
+			Ok(user)
+		}
+		/// Infallible. Simple inserts to storage. Your responsibility to ensure it doesn't already exist.
+		fn set_user(id: &T::AccountId, user: User) -> DispatchResult {
+			if Self::check_user_exists(id) {
+				return Err(Error::<T>::UserAlreadyExists.into()); // Should it err instead??
+			}
+			<Users<T>>::insert(id, user);
+			Ok(())
+		}
+		fn update_user(id: &T::AccountId, user: User) -> DispatchResult {
+			if !Self::check_user_exists(id) {
+				return Err(DispatchError::CannotLookup);
+			};
+			<Users<T>>::mutate(id, |u| *u = Some(user));
 			Ok(())
 		}
 	}
