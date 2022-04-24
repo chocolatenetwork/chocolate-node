@@ -50,12 +50,11 @@ use pallet_transaction_payment::CurrencyAdapter;
 pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{Perbill, Percent, Permill};
 
+pub use chocolate_node_constants::*;
 /// Import the chocolate pallet.
 pub use pallet_chocolate;
 /// Import the users pallet
 pub use pallet_users;
-/// An index to a block.
-pub type BlockNumber = u32;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
@@ -63,9 +62,6 @@ pub type Signature = MultiSignature;
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
 pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
-
-/// Balance of an account.
-pub type Balance = u128;
 
 /// Index of a transaction in the chain.
 pub type Index = u32;
@@ -117,29 +113,8 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 
 // Note: This could be later moved into a constants file - Separating time and currency, and importing primitives from node-primitives. Or here.
 
-/// This determines the average expected block time that we are targeting.
-/// Blocks will be produced at a minimum duration defined by `SLOT_DURATION`.
-/// `SLOT_DURATION` is picked up by `pallet_timestamp` which is in turn picked
-/// up by `pallet_aura` to implement `fn slot_duration()`.
-///
-/// Change this to adjust the block time.
-pub const MILLISECS_PER_BLOCK: u64 = 6000;
-
-// NOTE: Currently it is not possible to change the slot duration after the chain has started.
-//       Attempting to do so will brick block production.
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
-// Time is measured by number of blocks.
-pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
-pub const HOURS: BlockNumber = MINUTES * 60;
-pub const DAYS: BlockNumber = HOURS * 24;
-
-// This specifies currency things. Currently set to recurse on our currency. CHANGE FOR DEFI
-pub const MILLICENTICHOC: Balance = 1_000_000_000;
-pub const CENTICHOC: Balance = 1_000 * MILLICENTICHOC;
-pub const CHOC: Balance = 100 * CENTICHOC;
 pub const fn deposit(items: u32, bytes: u32) -> Balance {
-	items as Balance * 15 * CENTICHOC + (bytes as Balance) * 6 * CENTICHOC
+	items as Balance * 15 * CHOC + (bytes as Balance) * 6 * CHOC
 }
 
 type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
@@ -331,6 +306,10 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
+parameter_types! {
+	pub const RewardCap: Balance = 50 * HECTOCHOC;
+	pub const UserCollateral: Balance = 10 * HECTOCHOC;
+}
 /// Configure the pallet-chocolate in pallets/chocolate.
 impl pallet_chocolate::Config for Runtime {
 	type Event = Event;
@@ -340,6 +319,10 @@ impl pallet_chocolate::Config for Runtime {
 		pallet_collective::EnsureProportionAtLeast<_3, _5, AccountId, CouncilCollective>,
 	>;
 	type Currency = Balances;
+	type TreasuryOutlet = Treasury;
+	type RewardCap = RewardCap;
+	type UsersOutlet = UsersModule;
+	type UserCollateral = UserCollateral;
 }
 /// Configure the pallet-users in pallets/users.
 impl pallet_users::Config for Runtime {
@@ -367,7 +350,7 @@ impl pallet_collective::Config<CouncilCollective> for Runtime {
 
 // council election method configuration
 parameter_types! {
-	pub const CandidacyBond: Balance = 10 * CHOC;
+	pub const CandidacyBond: Balance = 10 * HECTOCHOC;
 	// 1 storage item created, key size is 32 bytes, value size is 16+16.
 	pub const VotingBondBase: Balance = deposit(1, 64);
 	// additional data per vote is 32 bytes (account id).
@@ -404,20 +387,20 @@ impl pallet_elections_phragmen::Config for Runtime {
 // treasury config. To-Do: Impl SpendFund trait on reviews and give treasury money on start.
 parameter_types! {
 	pub const ProposalBond: Permill = Permill::from_percent(5);
-	pub const ProposalBondMinimum: Balance = 1 * CHOC;
+	pub const ProposalBondMinimum: Balance = 1 * HECTOCHOC;
 	pub const SpendPeriod: BlockNumber = 1 * DAYS;
 	pub const Burn: Permill = Permill::from_percent(50);
 	pub const TipCountdown: BlockNumber = 1 * DAYS;
 	pub const TipFindersFee: Percent = Percent::from_percent(20);
-	pub const TipReportDepositBase: Balance = 1 * CHOC;
-	pub const DataDepositPerByte: Balance = 1 * CENTICHOC;
-	pub const BountyDepositBase: Balance = 1 * CHOC;
+	pub const TipReportDepositBase: Balance = 1 * HECTOCHOC;
+	pub const DataDepositPerByte: Balance = 1 * CHOC;
+	pub const BountyDepositBase: Balance = 1 * HECTOCHOC;
 	pub const BountyDepositPayoutDelay: BlockNumber = 1 * DAYS;
 	pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
 	pub const BountyUpdatePeriod: BlockNumber = 14 * DAYS;
 	pub const MaximumReasonLength: u32 = 16384;
 	pub const BountyCuratorDeposit: Permill = Permill::from_percent(50);
-	pub const BountyValueMinimum: Balance = 5 * CHOC;
+	pub const BountyValueMinimum: Balance = 5 * HECTOCHOC;
 	pub const MaxApprovals: u32 = 100;
 }
 
@@ -441,10 +424,6 @@ impl pallet_treasury::Config for Runtime {
 	type SpendPeriod = SpendPeriod;
 	type Burn = Burn;
 	type BurnDestination = ();
-	// Initially implemented for Bounties pallet. Use this to make the treasury spend funds for reviews
-	// say if the treasury still has funds, reward the review, otherwise return their payments. Also use subaccounts for staking hehe?
-	// set it up so that if the user is not rewarded, we simply give them an opportunity to take it up with the treasury later.
-	// set up treasury in a way that we always have enough to cater for bonuses of everyone on the system in an interest manner.
 	type SpendFunds = ();
 	type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
 	type MaxApprovals = MaxApprovals;

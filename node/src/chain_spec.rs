@@ -1,8 +1,8 @@
-// The extra import : CHOC could be moved to currency part of constants.
+use chocolate_node_constants::currency::HECTOCHOC;
+use chocolate_projects::{Reason, Status};
 use chocolate_runtime::{
-	pallet_chocolate::{Reason, Status},
 	AccountId, AuraConfig, Balance, BalancesConfig, ChocolateModuleConfig, CouncilConfig,
-	ElectionsConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, CHOC,
+	ElectionsConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig,
 	WASM_BINARY,
 };
 use sc_service::{ChainType, Properties};
@@ -40,6 +40,8 @@ pub fn authority_keys_from_seed(s: &str) -> (AuraId, GrandpaId) {
 }
 
 // Generate Chain Properties for $CHOC token
+// Decimals -> 1 Balance unit = 10^-{Decimals}CHOC.
+// Taking example of this Instance -> 1 Balance unit = 10^-12 CHOC.
 pub fn chain_properties() -> Properties {
 	let mut properties = Properties::new();
 	properties.insert("tokenDecimals".into(), 12.into());
@@ -146,7 +148,7 @@ fn testnet_genesis(
 ) -> GenesisConfig {
 	let num_endowed_accounts = endowed_accounts.len();
 
-	const ENDOWMENT: Balance = 10_000_000 * CHOC;
+	const ENDOWMENT: Balance = 10_000_000 * HECTOCHOC;
 	const STASH: Balance = ENDOWMENT / 1000;
 	GenesisConfig {
 		system: SystemConfig {
@@ -155,14 +157,13 @@ fn testnet_genesis(
 			changes_trie_config: Default::default(),
 		},
 		balances: BalancesConfig {
-			// Configure endowed accounts with initial balance of 1 << 60.
-			// configure with initial balance of endowment instead to test - Each person gets 1B choc.
+			// Configure endowed accounts with initial balance of ENDOWMENT.
 			balances: endowed_accounts.iter().cloned().map(|k| (k, ENDOWMENT)).collect(),
 		},
 		elections: ElectionsConfig {
 			// configure all members to have an initial 'stash' backing, or elect them
 			// - These map to our default members of Council Collective - If not changed, council remains constant for n period
-			// Elect only half endowed accounts initially - Alice and Bob  - Backed with 1M each.
+			// Elect only half endowed accounts initially - Alice and Bob  - Backed with 1M each - Based on 12 Decimal choc.
 			members: endowed_accounts
 				.iter()
 				.take((num_endowed_accounts + 1) / 2)
@@ -185,7 +186,21 @@ fn testnet_genesis(
 		// this isn't dynamic as we do not know the data passed.
 		chocolate_module: ChocolateModuleConfig {
 			init_projects: {
-				let e: Vec<AccountId> = vec![
+				let ps_req = Reason::PassedRequirements;
+				// use a static list for accounts
+				vec![
+					(Status::Accepted, ps_req.clone()),
+					(Status::Rejected, Reason::Malicious),
+					(Status::Accepted, ps_req.clone()),
+					(Status::Accepted, ps_req.clone()),
+					(Status::Proposed, ps_req.clone()),
+					(Status::Accepted, ps_req.clone()),
+					(Status::Accepted, ps_req.clone()),
+					(Status::Accepted, ps_req.clone()),
+				]
+			},
+			init_users: {
+				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
 					get_account_id_from_seed::<sr25519::Public>("Charlie"),
@@ -198,19 +213,6 @@ fn testnet_genesis(
 					get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-				];
-				let ps_req = Reason::PassedRequirements;
-				// use a static list for accounts
-
-				vec![
-					(e[0].clone(), Status::Accepted, ps_req.clone()),
-					(e[1].clone(), Status::Rejected, Reason::Malicious),
-					(e[2].clone(), Status::Accepted, ps_req.clone()),
-					(e[3].clone(), Status::Accepted, ps_req.clone()),
-					(e[4].clone(), Status::Proposed, ps_req.clone()),
-					(e[5].clone(), Status::Accepted, ps_req.clone()),
-					(e[6].clone(), Status::Accepted, ps_req.clone()),
-					(e[7].clone(), Status::Accepted, ps_req.clone()),
 				]
 			},
 		},

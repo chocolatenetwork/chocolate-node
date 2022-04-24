@@ -1,22 +1,16 @@
 [package]
-authors = ['Kresna SHA888 <https://github.com/SHA888>']
-description = 'Substrate FRAME chocolate pallet for defining custom runtime logic.'
-edition = '2018'
-homepage = ''
-license = 'Unlicense'
-name = 'pallet-chocolate'
-publish = false
-repository = 'https://github.com/Chocolate-Project/chocolate-node'
-version = '0.1.0'
-readme = 'README.md'
+name = "chocolate-users"
+version = "0.1.0"
+edition = "2021"
+description = "Primitives crate for chocolate users"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
-# added dep
-[dependencies.serde]
-version = "1.0.126"
-optional = true
-features = ['derive']
+
+[dev-dependencies.serde]
+version = '1.0.126'
 
 [dev-dependencies.sp-core]
 default-features = false
@@ -30,7 +24,7 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
 
-[dependencies.sp-runtime]
+[dev-dependencies.sp-runtime]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
@@ -41,7 +35,6 @@ default-features = false
 features = ['derive']
 package = 'parity-scale-codec'
 version = '2.0.0'
-
 
 [dependencies.sp-std]
 default-features = false
@@ -68,50 +61,15 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
 
-# Added pallets
-[dependencies.pallet-treasury]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '4.0.0-dev'
-# Added pallets
-[dependencies.pallet-balances]
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-tag = 'monthly-2021-08'
-version = '4.0.0-dev'
-
-# # added dep
-[dependencies.chocolate-users]
-path = '../../primitives/chocolate-users'
-default-features = false
-version = '0.1.0'
-# # added dep
-[dependencies.chocolate-projects]
-path = '../../primitives/chocolate-projects'
-default-features = false
-version = '0.1.0'
-# # added dep - is this tight coupling??
-[dependencies.pallet-users]
-default-features = false
-path = '../users'
-version = '0.1.0'
-
 [features]
 default = ['std']
+# is benchmarking necessary here?
 runtime-benchmarks = ['frame-benchmarking']
 std = [
-    'serde',
     'codec/std',
     'sp-std/std',
     'frame-support/std',
     'frame-system/std',
-    'pallet-treasury/std',
-    'pallet-balances/std',
     'frame-benchmarking/std',
-    # added
-    'chocolate-users/std',
-    'chocolate-projects/std',
-    'pallet-users/std',
 ]
 try-runtime = ['frame-support/try-runtime']
