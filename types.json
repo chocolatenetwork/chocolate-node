@@ -16,14 +16,17 @@
     "metadata": "MetaData",
     "proposalStatus": "ProposalStatus",
     "reward": "Balance",
-    "totalUserScores": "u32"
+    "totalUserScores": "u32",
+    "totalReviewScore": " u64",
+    "numberOfReviews": "u32"
   },
   "Review": {
     "proposalStatus": "ProposalStatus",
     "userID": "AccountId",
     "content": "Text",
     "projectID": "ProjectID",
-    "pointSnapshot": "u32"
+    "pointSnapshot": "u32",
+    "reviewScore": "u8"
   },
 
   "ProposalStatus": {
