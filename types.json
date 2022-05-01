@@ -7,8 +7,8 @@
   "ReviewAl": "Review",
   "ProjectAl": "Project",
   "User": {
-    "rank_points": "u32",
-    "project_id": "Option<u32>"
+    "rankPoints": "u32",
+    "projectId": "Option<u32>"
   },
   "Project": {
     "ownerID": "AccountId",
