@@ -78,7 +78,6 @@ pub mod pallet {
 			let user = self::Users::<T>::get(id).unwrap_or_default();
 			user.project_id.is_some()
 		}
-		/// Allows us to check if the user even exists before calling get by id.
 		fn check_user_exists(id: &T::AccountId) -> bool {
 			self::Users::<T>::contains_key(id)
 		}
@@ -90,7 +89,6 @@ pub mod pallet {
 			}
 			user
 		}
-		/// Idempotent. Simply inserts in storage.
 		fn set_user(id: &T::AccountId, user: User) -> () {
 			if Self::check_user_exists(id) {
 				return ();

@@ -13,7 +13,7 @@ type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 use chocolate_projects::{Reason, Status};
 
-// The runtime is an enum. omoshiroi
+// The runtime is an enum.
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
 	pub enum Test where
@@ -85,7 +85,7 @@ impl pallet_users::Config for Test {
 	type Event = Event;
 }
 parameter_types! {
-	pub const Cap: u128 = 5;
+	pub const Cap: u128 = 100;
 	pub const UserCollateral: u128 = 10;
 }
 // our configs start here

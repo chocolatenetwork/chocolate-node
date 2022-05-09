@@ -23,6 +23,7 @@ pub mod pallet {
 	use chocolate_projects::*;
 	use chocolate_users::UserIO;
 	use frame_support::{
+		assert_ok,
 		dispatch::DispatchResult,
 		pallet_prelude::*,
 		sp_runtime::traits::Saturating,
@@ -30,7 +31,7 @@ pub mod pallet {
 			Currency, ExistenceRequirement::KeepAlive, Imbalance, OnUnbalanced, ReservableCurrency,
 		},
 	};
-	use frame_system::pallet_prelude::*;
+	use frame_system::{pallet_prelude::*, Origin};
 	use sp_runtime::{traits::CheckedDiv, ArithmeticError};
 	use sp_std::str;
 	use sp_std::vec::Vec;
@@ -135,6 +136,8 @@ pub mod pallet {
 		AcceptingNotProposed,
 		/// The checked division method failed, either due to overflow/underflow or because of division by zero.
 		CheckedDivisionFailed,
+		/// Review score is out of range 1-5
+		ReviewScoreOutOfRange,
 	}
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
@@ -142,7 +145,7 @@ pub mod pallet {
 		/// Create a project
 		///  
 		/// - O(1).  
-		/// - Init: Index starts at 0
+		/// - Init: Index starts at 1
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,3))]
 		pub fn create_project(origin: OriginFor<T>, project_meta: Vec<u8>) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -169,7 +172,7 @@ pub mod pallet {
 		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,3))]
 		pub fn create_review(
 			origin: OriginFor<T>,
-			review_meta: Vec<u8>,
+			review_meta: (u8, Vec<u8>),
 			project_id: ProjectID,
 		) -> DispatchResult {
 			let who = ensure_signed(origin)?;
@@ -178,6 +181,7 @@ pub mod pallet {
 				<Projects<T>>::get(project_id).ok_or(Error::<T>::NoProjectWithId)?;
 			ensure!(!<Reviews<T>>::contains_key(&who, project_id), Error::<T>::DuplicateReview);
 			ensure!(this_project.owner_id.ne(&who), Error::<T>::OwnerReviewedProject);
+			ensure!(review_meta.0 <= 5 && review_meta.0 >= 1, Error::<T>::ReviewScoreOutOfRange);
 			let reserve = Pallet::<T>::can_collateralise(&who)?;
 			// Fallible MUTATIONS
 			Pallet::<T>::collateralise(&who, reserve)?;
@@ -190,10 +194,11 @@ pub mod pallet {
 				project_id,
 				Review {
 					user_id: who.clone(),
-					content: review_meta,
+					content: review_meta.1,
 					project_id,
 					proposal_status: Default::default(),
 					point_snapshot: user.rank_points,
+					review_score: review_meta.0,
 				},
 			);
 			<Projects<T>>::mutate(project_id, |project| {
@@ -227,6 +232,8 @@ pub mod pallet {
 			Pallet::<T>::reward_user(&user_id, &mut project, &review)?;
 			review.proposal_status.status = Status::Accepted;
 			review.proposal_status.reason = Reason::PassedRequirements;
+			project.number_of_reviews= project.number_of_reviews.saturating_add(1);
+			project.total_review_score= project.total_review_score.saturating_add(u64::from(review.review_score));
 			// STORAGE MUTATIONS
 			<Reviews<T>>::mutate(&user_id, project_id, |r| {
 				*r = Option::Some(review);
@@ -310,11 +317,11 @@ pub mod pallet {
 			if _missing_reward > BalanceOf::<T>::from(0u32) {
 				// assuming our can_unreserve failed
 				// rollback ----
+				// It Should be enough to rollback following our initial unreserve
 				T::Currency::reserve(
 					&project_struct.owner_id,
 					amount.saturating_sub(_missing_reward),
-				)
-				.expect("Should be enough to rollback following our initial unreserve");
+				)?;
 				return Err(Error::<T>::RewardInconsistent.into());
 			}
 			// Update the reward on project.
@@ -337,10 +344,9 @@ pub mod pallet {
 		/// Release the collateral held by the account. Should only be called in the context of acceptance.
 		/// Does no checks. Assumes the state is as required.
 		///
-		/// **Requires** : check_collateral
-		pub fn release_collateral(who: &T::AccountId) -> DispatchResult {
+		/// **Requires** : check_collateral. Calls currency::unreserve
+		pub fn release_collateral(who: &T::AccountId) {
 			T::Currency::unreserve(&who, T::UserCollateral::get());
-			Ok(())
 		}
 		/// Reward the user for their contribution to the project. Assumed to be called after acceptance.
 		///
@@ -351,6 +357,7 @@ pub mod pallet {
 			review: &ReviewAl<T>,
 		) -> DispatchResult {
 			let reward = project.reward.clone();
+			let mut user = T::UsersOutlet::get_user_by_id(&who).ok_or(Error::<T>::NoneValue)?;
 			// Reward calc
 			// reward is reward * (user_point/ttl_project_point )-- use fixed point attr of BalanceOf and move vars around in eqn.
 
@@ -358,17 +365,23 @@ pub mod pallet {
 			let balance_rev_sshot = BalanceOf::<T>::from(review.point_snapshot);
 			let balance_div = reward
 				.checked_div(&balance_prj_score)
-				.ok_or(DispatchError::Arithmetic(ArithmeticError::DivisionByZero))?;
+				.ok_or({
+					ensure!(balance_prj_score != BalanceOf::<T>::from(0u32),DispatchError::Arithmetic(ArithmeticError::DivisionByZero));
+					ensure!(reward > balance_prj_score, DispatchError::Arithmetic(ArithmeticError::Underflow));
+					DispatchError::Arithmetic(ArithmeticError::Overflow)
+				})?;
 
 			let reward_fraction = balance_div.saturating_mul(balance_rev_sshot);
 			// Unreserve our final decision from project.
 			// We expect projects to not edit this reserve. What if they do?? - Users tx start failing: Ask users to Report! if found, and track txs
 
-			// Mutations
-			Pallet::<T>::release_collateral(who)?;
-			Pallet::<T>::reward(project, reward_fraction).expect("should be able to reward"); // nothing should fail after release
-			T::Currency::transfer(&project.owner_id, who, reward_fraction, KeepAlive)
-				.expect("should be enough to safely transfer");
+			// Mutations - Fallible. Expect: All of these to rollback changes if they fail.
+			user.rank_points =user.rank_points.saturating_add(1);
+			Pallet::<T>::reward(project, reward_fraction)?;
+			T::Currency::transfer(&project.owner_id, who, reward_fraction, KeepAlive)?;
+			T::UsersOutlet::update_user(&who,user)?;
+			// Mutations  - Infallible
+			Pallet::<T>::release_collateral(who);
 			Ok(())
 		}
 		/// Check if a **user** can serve up the required collateral
@@ -413,76 +426,38 @@ pub mod pallet {
 			metadata: Vec<u8>,
 			status: Status,
 			reason: Reason,
-			count: ProjectID,
 		) -> ProjectAl<T> {
-			let mut project = ProjectAl::<T>::new(who.clone(), metadata);
-			let mut user = T::UsersOutlet::get_user_by_id(&who).unwrap_or_default();
 			// FALLIBLE MUTATIONS
-			Pallet::<T>::reserve_reward(&mut project)
-				.expect("The project owner should have sufficient balance");
-			user.project_id = Some(count);
+			let t = Origin::<T>::Signed(who.clone());
+			assert_ok!(Pallet::<T>::create_project(t.into(), metadata.clone()));
+			let next_index = <NextProjectIndex<T>>::get().unwrap_or_default();
+			let index = next_index.saturating_sub(1);
+			// STORAGE MUTATIONS
+			let mut project = <Projects<T>>::get(index).unwrap();
 			project.proposal_status.status = status;
 			project.proposal_status.reason = reason;
-			// STORAGE MUTATIONS
-			<Projects<T>>::insert(count, project.clone());
-			T::UsersOutlet::update_user(&who, user).expect("User should exist");
+			<Projects<T>>::insert(index, project.clone());
 			project
 		}
 		/// Create a set of reviews from a set of ids as needed and places them in storage
-		pub fn initialize_reviews(
-			acnt_ids: Vec<T::AccountId>,
-			project: &mut ProjectAl<T>,
-			count: ProjectID,
-		) -> Vec<ReviewAl<T>> {
+		pub fn initialize_reviews(acnt_ids: Vec<T::AccountId>) {
+			let proj = <NextProjectIndex<T>>::get().unwrap_or_default();
+			let project_id =  proj.saturating_sub(1);
 			let acnt_ids_iter = acnt_ids.iter();
-			let mut local_pt = count;
-			// 15 is our target "gp". Pseudo random. This seed seems good enough.
-			let mut spread_points = || {
-				local_pt = local_pt.saturating_add(local_pt.saturating_add(7));
-				local_pt = local_pt.saturating_mul(17) % 15u32;
-				if local_pt == 0 {
-					local_pt = local_pt.saturating_add(7);
-				}
-				local_pt
-			};
 			// intialize review contents with their ids
-			let list_of_revs: Vec<ReviewAl<T>> = constants::project::REVS
-				.iter()
-				.zip(acnt_ids_iter)
-				.map(|(rev, id)| {
-					let reserve = Pallet::<T>::can_collateralise(id).expect(
-						"The user should have the required balance, enough to avoid reaping too",
-					);
-					let _ = Pallet::<T>::collateralise(id, reserve);
-					// force collateralise each so we can immediately apply accept i.e update stake on project and supply reward.
-					let mut user = T::UsersOutlet::get_user_by_id(id).unwrap_or_default();
-
-					user.rank_points = spread_points();
-					// init rev
-					let mut review: ReviewAl<T> = Default::default();
-					review.project_id = count;
-					review.proposal_status.status = Status::Accepted;
-					review.content = rev.to_vec();
-					review.user_id = id.clone();
-					review.point_snapshot = user.rank_points;
-					project.total_user_scores =
-						project.total_user_scores.saturating_add(user.rank_points);
-
-					T::UsersOutlet::update_user(id, user).expect("User should exist");
-					<Reviews<T>>::insert(id.clone(), count, review.clone());
-
-					review
-				})
-				.collect();
-
-			// storage mutations
-			<Projects<T>>::mutate(count, |p| *p = Some(project.clone()));
-			for elem in list_of_revs.iter() {
-				let _ = Pallet::<T>::reward_user(&elem.user_id, project, &elem)
-					.expect("The collateral and all exists");
-				<Projects<T>>::mutate(count, |p| *p = Some(project.clone()));
+			for (rev, id) in constants::project::REVS.iter().zip(acnt_ids_iter.clone()) {
+				let dispatch = Pallet::<T>::create_review(
+					Origin::<T>::Signed(id.clone()).into(),
+					(rev.0, rev.1.to_vec()),
+					project_id,
+				);
+				assert_ok!(dispatch);
 			}
-			list_of_revs
+			// Accept the reviews.
+			for (_, id) in constants::project::REVS.iter().zip(acnt_ids_iter){
+				let dispatch2 =Pallet::<T>::accept_review(Origin::<T>::Root.into(), id.clone(), project_id);
+				assert_ok!(dispatch2);
+			}
 		}
 	}
 	/// Genesis config for the chocolate pallet
@@ -508,12 +483,15 @@ pub mod pallet {
 			let iter_users = (&self.init_users).iter();
 			for id in iter_users.clone() {
 				T::UsersOutlet::set_user(id, Default::default());
-			};
+			}
 			// setup a counter to serve as project index
-			let mut count: ProjectID = 1;
 			let meta: Vec<Vec<u8>> =
 				constants::project::METADATA.iter().map(|each| each.to_vec()).collect();
-			let init_projects_w_users: Vec<_> = (&self.init_projects).into_iter().zip(iter_users).map(|((s,r),accnt)|(accnt,s.clone(),r.clone())).collect();
+			let init_projects_w_users: Vec<_> = (&self.init_projects)
+				.into_iter()
+				.zip(iter_users)
+				.map(|((s, r), accnt)| (accnt, s.clone(), r.clone()))
+				.collect();
 			let zipped = (init_projects_w_users).into_iter().zip(meta.iter());
 			// create project from associated metadata in zip.
 			for each in zipped {
@@ -521,7 +499,8 @@ pub mod pallet {
 				let meta_cid = meta_ref.to_owned();
 				let (acnt, stat, reas) = project_ref.to_owned();
 				// Filter ids so generated reviews do not include project owner
-				let filtered_ids: Vec<_> = (&self.init_users).iter()
+				let filtered_ids: Vec<_> = (&self.init_users)
+					.iter()
 					.filter(|id| acnt.ne(id))
 					.map(|long| long.clone())
 					.collect();
@@ -541,13 +520,9 @@ pub mod pallet {
 					.for_each(|id| T::Currency::resolve_creating(id, T::Currency::issue(total)));
 
 				// create reviews and projects and store.
-				let mut returnable =
-					Pallet::<T>::initialize_project(acnt.clone(), meta_cid, stat, reas, count);
-				let _reviews: Vec<_> =
-					Pallet::<T>::initialize_reviews(filtered_ids, &mut returnable, count);
-				// STORAGE MUTATIONS -- after due to mut
-				count += 1;
-				<NextProjectIndex<T>>::put(count);
+
+				Pallet::<T>::initialize_project(acnt.clone(), meta_cid, stat, reas);
+				Pallet::<T>::initialize_reviews(filtered_ids);
 			}
 			// Fill the treasury - A little hack.
 			let imbalance = T::Currency::issue(T::RewardCap::get());

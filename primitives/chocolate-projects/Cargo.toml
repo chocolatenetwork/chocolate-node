@@ -7,9 +7,6 @@ description = "Primitives crate for chocolate projects"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
-# ----------------_ dup
-[dev-dependencies.serde]
-version = '1.0.126'
 
 [dev-dependencies.sp-core]
 default-features = false
@@ -73,16 +70,13 @@ default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'monthly-2021-08'
 version = '4.0.0-dev'
-# added pallets - duplicate with dev serde
+# added dep
 [dependencies.serde]
 version = "1.0.126"
 optional = true
 features = ['derive']
-# # added dep
-
 [features]
 default = ['std']
-# or here?
 runtime-benchmarks = ['frame-benchmarking']
 std = [
     'serde',

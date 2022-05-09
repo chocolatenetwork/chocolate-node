@@ -7,10 +7,10 @@ pub mod project {
 		b"QmVzxGUaVF4HVfvtoaVqXBcVGqyEq72TAp8s9u9pmH5Vra",
 	];
 
-	pub const REVS: [&[u8]; 4] = [
-		b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review1.json",
-		b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review2.json",
-		b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review3.json",
-		b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review4.json",
+	pub const REVS: [(u8,&[u8]); 4] = [
+		(3,b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review1.json"),
+		(5,b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review2.json"),
+		(5,b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review3.json"),
+		(3,b"QmdKx4pmnJUP5GdjtpJE2ei4xeaRKQWYwvXGuVY1AbAwDM/review4.json"),
 	];
 }
