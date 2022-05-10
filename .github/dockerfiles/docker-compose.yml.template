@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  dev:
+    container_name: chocolate-node-dev
+    image: %%DOCKER_IMAGE%%
+    working_dir: /var/www/chocolate
+    ports:
+      - "9944:9944"
+    environment:
+      - CARGO_HOME=/var/www/chocolate/.cargo
+    volumes:
+      - .:/var/www/chocolate
+      # This is the main volume we need to provision if dockerising
+      - type: bind
+        source: ./.local
+        target: /root/.local
+    command: bash -c "cd /node && ./target/release/chocolate --dev --ws-external"

@@ -1,0 +1,12 @@
+# FROM paritytech/ci-linux:595b5691-20211221  Ref.
+FROM gitpod/workspace-full
+
+# https://rust-lang.github.io/rustup/installation/index.html . Clean up existing installation
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+# source isn't available for some reason
+RUN . ~/.bashrc
+RUN . $HOME/.cargo/env
+RUN rustup toolchain install nightly --allow-downgrade --profile minimal --component cargo
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly
+# Rustup and cargo should be available
+RUN chmod +x ./scripts/*.sh

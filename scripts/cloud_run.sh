@@ -1,11 +1,16 @@
+#!/usr/bin/bash
 
-# HOSTNAME/PROJECT-ID/IMAGE@IMAGE-DIGEST
-# Tag with this
-# eu.gcr.io/united-option-342615/choc-dev/test:v1.0
-# Dockerise
-docker build /workspace/chocolate-node
-# Change tag
-docker tag $(docker images | awk '{print $3}' | awk 'NR==2') eu.gcr.io/united-option-342615/choc-dev/test
+# Run docker build with tag
+TAG=islami00/choc-test
+docker build -f .github/dockerfiles/Dockerfile.ubuntu-base -t $TAG .
+#   give option for USER and GROUP
+# Grab dockerimage hash.
+HASH=$(docker images | awk '{print $3}' | awk 'NR==2')
+#   Combine image hash with name
+IMAGE="${TAG}@${HASH}" 
+#   Replace DOCKER_IMAGE in docker-compose.yml.template
+cat .github/dockerfiles/docker-compose.yml.template | sed "s/%%DOCKER_IMAGE%%/${IMAGE}/g" > docker-compose.yml
+#   Make commit with tag release
+git add docker-compose.yml && git commit -m "release: New image hash"
 # Push to repo
-docker push eu.gcr.io/united-option-342615/choc-dev/test
-
+docker push $TAG
