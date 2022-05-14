@@ -9,4 +9,3 @@ RUN . $HOME/.cargo/env
 RUN rustup toolchain install nightly --allow-downgrade --profile minimal --component cargo
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly
 # Rustup and cargo should be available
-RUN chmod +x ./scripts/*.sh
