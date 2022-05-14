@@ -1,0 +1,14 @@
+
+image:
+  file: .github/dockerfiles/Dockerfile.gitpod-base
+  context: ./
+tasks:
+  - name: Initial setup
+    init: ./scripts/gitpod_init.sh
+  - name: Run
+    init: gp sync-await setup
+    command: cargo run 
+
+vscode:
+  extensions:
+    - matklad.rust-analyzer
