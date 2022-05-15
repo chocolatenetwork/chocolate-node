@@ -3,7 +3,7 @@ version: "3.9"
 services:
   dev:
     container_name: chocolate-node-dev
-    image: islami00/choc-test@sha256:75a9f87226e580401af236dd28ada834f4c924232097e168fd7b3437989e7157
+    image: islami00/choc-test:15052022
     working_dir: /var/www/chocolate
     ports:
       - "9944:9944"
@@ -15,4 +15,4 @@ services:
       - type: bind
         source: ./.local
         target: /root/.local
-    command: bash -c "cd /choc/node && ./target/release/chocolate --dev --ws-external"
+    command: bash -c "cd /node && ./target/release/chocolate --dev --ws-external"
