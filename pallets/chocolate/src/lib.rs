@@ -160,7 +160,7 @@ pub mod pallet {
 			let mut project = ProjectAl::<T>::new(who.clone(), project_meta.clone());
 			// FALLIBLE MUTATIONS
 			Pallet::<T>::reserve_reward(&mut project)?;
-			user.project_id = Some(new_index);
+			user.project_id = Some(index);
 			// STORAGE MUTATIONS
 			<Projects<T>>::insert(index, project);
 			<NextProjectIndex<T>>::put(new_index);
