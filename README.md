@@ -94,6 +94,11 @@ RUST_BACKTRACE=1 ./target/release/chocolate -ldebug --dev
 Once the node is running locally, you can connect it with **Polkadot-JS Apps** front-end
 to interact with your chain. [Click here](https://polkadot.js.org/apps/#/explorer?rpc=ws://localhost:9944) connecting the Apps to your local node.
 
+
+### Connect with Chocolate Demo Front-end
+
+As above once you have the node running locally, you can [open this link](https://chocolate-demo.web.app?rpc=ws%3A%2F%2F127.0.0.1%3A9944) which has the added param `?rpc=ws%3A%2F%2F127.0.0.1%3A9944` you can modify this if you have changed the default ports.
+
 ### Multi-Node Local Testnet
 
 If you want to see the multi-node consensus algorithm in action, refer to
