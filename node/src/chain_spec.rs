@@ -186,7 +186,21 @@ fn testnet_genesis(
 		// this isn't dynamic as we do not know the data passed.
 		chocolate_module: ChocolateModuleConfig {
 			init_projects: {
-				let e: Vec<AccountId> = vec![
+				let ps_req = Reason::PassedRequirements;
+				// use a static list for accounts
+				vec![
+					(Status::Accepted, ps_req.clone()),
+					(Status::Rejected, Reason::Malicious),
+					(Status::Accepted, ps_req.clone()),
+					(Status::Accepted, ps_req.clone()),
+					(Status::Proposed, ps_req.clone()),
+					(Status::Accepted, ps_req.clone()),
+					(Status::Accepted, ps_req.clone()),
+					(Status::Accepted, ps_req.clone()),
+				]
+			},
+			init_users: {
+				vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
 					get_account_id_from_seed::<sr25519::Public>("Charlie"),
@@ -199,19 +213,6 @@ fn testnet_genesis(
 					get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-				];
-				let ps_req = Reason::PassedRequirements;
-				// use a static list for accounts
-
-				vec![
-					(e[0].clone(), Status::Accepted, ps_req.clone()),
-					(e[1].clone(), Status::Rejected, Reason::Malicious),
-					(e[2].clone(), Status::Accepted, ps_req.clone()),
-					(e[3].clone(), Status::Accepted, ps_req.clone()),
-					(e[4].clone(), Status::Proposed, ps_req.clone()),
-					(e[5].clone(), Status::Accepted, ps_req.clone()),
-					(e[6].clone(), Status::Accepted, ps_req.clone()),
-					(e[7].clone(), Status::Accepted, ps_req.clone()),
 				]
 			},
 		},

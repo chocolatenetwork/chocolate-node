@@ -78,27 +78,23 @@ pub mod pallet {
 			let user = self::Users::<T>::get(id).unwrap_or_default();
 			user.project_id.is_some()
 		}
-		/// Allows us to check if the user even exists before calling get by id.
 		fn check_user_exists(id: &T::AccountId) -> bool {
 			self::Users::<T>::contains_key(id)
 		}
-		fn get_or_create_default(id: &T::AccountId) -> Result<User, DispatchError> {
+		fn get_or_create_default(id: &T::AccountId) -> User {
 			let user_exists = Self::check_user_exists(&id);
-			let mut user = Self::get_user_by_id(&id).unwrap_or_default();
+			let user = Self::get_user_by_id(&id).unwrap_or_default();
 			if !user_exists {
-				user.rank_points = 1;
-				user.project_id = None;
 				self::Users::<T>::insert(&id, user.clone());
 			}
-			Ok(user)
+			user
 		}
-		/// Infallible. Simple inserts to storage. Your responsibility to ensure it doesn't already exist.
-		fn set_user(id: &T::AccountId, user: User) -> DispatchResult {
+		fn set_user(id: &T::AccountId, user: User) -> () {
 			if Self::check_user_exists(id) {
-				return Err(Error::<T>::UserAlreadyExists.into()); // Should it err instead??
+				return ();
 			}
 			<Users<T>>::insert(id, user);
-			Ok(())
+			()
 		}
 		fn update_user(id: &T::AccountId, user: User) -> DispatchResult {
 			if !Self::check_user_exists(id) {

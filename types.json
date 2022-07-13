@@ -7,8 +7,8 @@
   "ReviewAl": "Review",
   "ProjectAl": "Project",
   "User": {
-    "rank_points": "u32",
-    "project_id": "Option<u32>"
+    "rankPoints": "u32",
+    "projectId": "Option<u32>"
   },
   "Project": {
     "ownerID": "AccountId",
@@ -16,14 +16,17 @@
     "metadata": "MetaData",
     "proposalStatus": "ProposalStatus",
     "reward": "Balance",
-    "totalUserScores": "u32"
+    "totalUserScores": "u32",
+    "totalReviewScore": " u64",
+    "numberOfReviews": "u32"
   },
   "Review": {
     "proposalStatus": "ProposalStatus",
     "userID": "AccountId",
     "content": "Text",
     "projectID": "ProjectID",
-    "pointSnapshot": "u32"
+    "pointSnapshot": "u32",
+    "reviewScore": "u8"
   },
 
   "ProposalStatus": {

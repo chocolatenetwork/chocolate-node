@@ -91,8 +91,8 @@ version = '0.1.0'
 path = '../../primitives/chocolate-projects'
 default-features = false
 version = '0.1.0'
-# # added dep - is this tight coupling??
-[dependencies.pallet-users]
+# # added dep - required for testing
+[dev-dependencies.pallet-users]
 default-features = false
 path = '../users'
 version = '0.1.0'

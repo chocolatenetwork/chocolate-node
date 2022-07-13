@@ -1,0 +1,26 @@
+FROM gitpod/workspace-full
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --default-toolchain none -y
+
+RUN . ~/.bashrc
+RUN . $HOME/.cargo/env
+RUN rustup toolchain install nightly --allow-downgrade --profile minimal --component cargo
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly
+WORKDIR /choc/node
+
+# Change to machine user/group
+ARG USER=gitpod
+ARG GROUP=gitpod
+USER ${USER}:${GROUP}
+
+RUN sudo mkdir /choc/node -p
+RUN sudo chown -R ${USER}:${GROUP} /choc
+WORKDIR /choc/node/
+
+COPY --chown=${USER}:${GROUP} . .
+
+RUN mkdir -p ./target/release
+COPY --chown=${USER}:${GROUP} ./target/release/chocolate ./target/release
+
+EXPOSE ${PORT}
+CMD ["/usr/bin/bash","-c","./target/release/chocolate","--dev","--ws-external", "$PORT"]
