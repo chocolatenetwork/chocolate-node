@@ -18,6 +18,8 @@ pub struct Review<UserID> {
 	pub project_id: ProjectID,
 	/// A snapshot of the user's rank at the time of review
 	pub point_snapshot: u32,
+	/// Score of a review
+	pub review_score: u8
 }
 
 /// The metadata of a project.
@@ -87,8 +89,12 @@ pub struct Project<UserID, Balance> {
 	pub reward: Balance,
 	/// A sum of all the scores of reviews proposed to the project. Saturate when u32::MAX.
 	pub total_user_scores: u32,
+	/// The total review scores for a project
+	pub total_review_score: u64,
+	/// The number of reviews submitted
+	pub number_of_reviews: u32
 }
-// ------------------------------------------------------------^edit
+
 impl<UserID: Default, Balance: From<u32> + Default> Project<UserID, Balance> {
 	///  Set useful defaults.
 	///  Initialises a project with defaults on everything except id and metadata

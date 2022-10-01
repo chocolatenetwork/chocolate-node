@@ -3,7 +3,7 @@ version: "3.9"
 services:
   dev:
     container_name: chocolate-node-dev
-    image: islami00/choc-test:15052022
+    image: %%DOCKER_IMAGE%%
     working_dir: /var/www/chocolate
     ports:
       - "9944:9944"
