@@ -1,4 +1,4 @@
-Note:  This Repository has been moved to https://github.com/chocolatenetwork/chocolate-parachain
+Note: This has been moved to a parachain build: https://github.com/chocolatenetwork/chocolate-parachain
 
 <div align="center">
 <img src="https://avatars.githubusercontent.com/u/89528034?s=400&u=37141744cd31c4d2bb349b18627f3903ab7eac34&v=4">
